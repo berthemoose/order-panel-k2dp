@@ -1,0 +1,30 @@
+export interface Order {
+    _id: string;
+    name: string;
+    surname: string;
+    email: string;
+    phone: string;
+    company: string;
+    comments: string;
+    copies: number;
+    specs: Array<{[key:string]: string}>;
+    upload_status: string;
+    order_status: string;
+    submitted_at: string;
+    isStudent: boolean;
+    id: string;
+    file_url: string;
+}
+
+export interface Orders {
+    status: string;
+    data: {
+        orders: Array<Order>;
+    };
+    pagination: {
+        total: number;
+        limit: number;
+        skip: number;
+        returned: number;
+    }
+}
