@@ -1,7 +1,24 @@
 <template>
 <div class="p-6 bg-gray-50 min-h-screen">
     <div class="flex items-center justify-between mb-6">
-        <h1 class="text-3xl font-bold text-gray-900">Zamówienia oczekujące</h1>
+        <div class="flex items-center gap-3">
+            <h1 class="text-3xl font-bold text-gray-900">Zamówienia oczekujące</h1>
+            <!-- WebSocket Status Indicator -->
+            <div class="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium" :class="{
+                'bg-green-100 text-green-700': wsStatus === 'connected',
+                'bg-yellow-100 text-yellow-700': wsStatus === 'disconnected',
+                'bg-red-100 text-red-700': wsStatus === 'error'
+            }">
+                <span class="w-2 h-2 rounded-full" :class="{
+                    'bg-green-500 animate-pulse': wsStatus === 'connected',
+                    'bg-yellow-500': wsStatus === 'disconnected',
+                    'bg-red-500': wsStatus === 'error'
+                }"></span>
+                <span v-if="wsStatus === 'connected'">Połączono z serwerem</span>
+                <span v-else-if="wsStatus === 'error'">Serwer niedostępny</span>
+                <span v-else>Łączenie...</span>
+            </div>
+        </div>
         <button
             v-if="expandedOrderIds.length > 0"
             @click="closeAll"
@@ -133,9 +150,12 @@
                 
                 
                 <!-- File URL -->
-                <div v-if="order.file_url">
+                <div>
                     <p class="text-xs font-medium text-gray-500 uppercase mb-1">Plik</p>
+                    
+                    <!-- File is ready -->
                     <a 
+                        v-if="order.file_url && order.upload_status === 'uploaded'"
                         :href="order.file_url" 
                         target="_blank"
                         class="text-sm text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
@@ -146,6 +166,29 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                     </a>
+                    
+                    <!-- File is being uploaded -->
+                    <div 
+                        v-else-if="order.upload_status === 'pending' || order.upload_status === 'processing'"
+                        class="text-sm text-gray-600 inline-flex items-center gap-2"
+                    >
+                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Trwa przesyłanie pliku...
+                    </div>
+                    
+                    <!-- File upload failed -->
+                    <div 
+                        v-else-if="order.upload_status === 'upload_failed'"
+                        class="text-sm text-red-600 inline-flex items-center gap-1"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Błąd przesyłania pliku
+                    </div>
                 </div>
                 
                 <!-- Timestamp -->
@@ -166,13 +209,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useApi } from "../../composables/useApi";
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import {useGetOrderList} from "../../composables/useGetOrderList"
 import type { Order } from '../../types/order'
 
 const {data, error} = useGetOrderList()
-const orders = computed(()=> data.value?.data?.orders || [])
+
+// Create reactive orders array that we can modify
+const ordersFromRest = computed(()=> data.value?.data?.orders || [])
+const liveOrders = ref<Order[]>([])
+
+// Combine REST orders with live orders, prioritizing live updates
+const orders = computed(() => {
+  if (liveOrders.value.length > 0) {
+    return liveOrders.value
+  }
+  return ordersFromRest.value
+})
+
+// WebSocket connection
+const ws = ref<WebSocket | null>(null)
+const wsStatus = ref<'disconnected' | 'connected' | 'error'>('disconnected')
 
 const expandedOrderIds = ref<string[]>([])
 
@@ -228,4 +285,82 @@ const formatDate = (dateString: string) => {
         minute: '2-digit'
     })
 }
+
+// WebSocket functionality
+const connectWebSocket = () => {
+  // Connect to WebSocket
+  ws.value = new WebSocket('ws://localhost:8003/ws/orders')
+  
+  ws.value.onopen = () => {
+    console.log('✅ Zainicjowałem połączenie z serwerem WebSocket - oczekuję na zamówienia')
+    wsStatus.value = 'connected'
+  }
+  
+  ws.value.onmessage = (event) => {
+    try {
+      const message = JSON.parse(event.data)
+      
+      if (message.type === 'new_order') {
+        console.log('Mamy nowe zamówienie:', message.data)
+        
+        // Check if order already exists (deduplication)
+        const exists = liveOrders.value.find(o => o._id === message.data._id)
+        
+        if (!exists) {
+          // Add new order to the top of the list
+          liveOrders.value = [message.data, ...liveOrders.value]
+        }
+      } else if (message.type === 'order_updated') {
+        console.log('📝 Aktualizacja zamówienia:', message.data)
+        
+        // Find and update the specific order
+        const orderIndex = liveOrders.value.findIndex(o => o._id === message.data._id)
+        
+        if (orderIndex !== -1) {
+          // Update the order with new data (merge updates)
+          liveOrders.value[orderIndex] = {
+            ...liveOrders.value[orderIndex],
+            ...message.data.updates
+          }
+          console.log('✅ Zaktualizowano zamówienie:', message.data._id)
+        }
+      }
+    } catch (error) {
+      console.error('Błąd przy wczytywaniu danych z serwera', error)
+    }
+  }
+  
+  ws.value.onerror = () => {
+    console.error('❌ Błąd połączenia z serwerem WebSocket')
+    wsStatus.value = 'error'
+  }
+  
+  ws.value.onclose = () => {
+    console.log('🔌 Rozłączono z serwerem WebSocket')
+    wsStatus.value = 'disconnected'
+  }
+}
+
+// Initialize on mount
+onMounted(() => {
+  console.log('📡 Otwieram nowe połączenie z serwerem odbioru zamówień')
+  
+  // Wait for initial REST data to load
+  setTimeout(() => {
+    // Set initial orders from REST
+    liveOrders.value = [...ordersFromRest.value]
+    console.log(`✅ Wczytałem ilość zamówień: ${liveOrders.value.length} z serwera `)
+    
+    // Connect to WebSocket for real-time updates
+    connectWebSocket()
+  }, 500)
+})
+
+// Cleanup on unmount
+onUnmounted(() => {
+  if (ws.value) {
+    ws.value.close()
+    console.log('🧹 Połączenie z serwerem WebSocket zostało zamknięte')
+  }
+})
 </script>
