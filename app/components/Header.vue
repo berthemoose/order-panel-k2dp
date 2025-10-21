@@ -16,28 +16,53 @@
           >
             Home
           </NuxtLink>
+          
+          <!-- Only show Orders link when authenticated -->
           <NuxtLink 
+            v-if="isAuthenticated"
             to="/orders" 
             class="text-gray-700 hover:text-blue-600 transition-colors font-medium"
             active-class="text-blue-600 font-semibold"
           >
-            Orders
+            Zamówienia
           </NuxtLink>
+          
+          <!-- Show Login button when not authenticated -->
           <NuxtLink 
-            to="/about" 
-            class="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-            active-class="text-blue-600 font-semibold"
+            v-if="!isAuthenticated"
+            to="/login" 
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
-            About
+            Zaloguj się
           </NuxtLink>
+          
+          <!-- User menu - only when authenticated -->
+          <div v-if="isAuthenticated" class="flex items-center gap-4 ml-4 pl-4 border-l border-gray-200">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+                {{ userInitials }}
+              </div>
+              <span class="text-sm font-medium text-gray-700">{{ user?.fullName || user?.email }}</span>
+            </div>
+            <UButton
+              @click="handleLogout"
+              color="error"
+              variant="soft"
+              size="sm"
+            >
+              Wyloguj
+            </UButton>
+          </div>
         </div>
 
         <!-- Mobile menu button -->
         <div class="flex md:hidden">
-          <button 
+          <UButton 
             @click="mobileMenuOpen = !mobileMenuOpen"
-            type="button" 
-            class="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100 transition-colors"
+            type="button"
+            color="neutral"
+            variant="ghost"
+            square
           >
             <span class="sr-only">Open main menu</span>
             <svg v-if="!mobileMenuOpen" class="block h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -46,7 +71,7 @@
             <svg v-else class="block h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </UButton>
         </div>
       </div>
     </nav>
@@ -62,29 +87,83 @@
         >
           Home
         </NuxtLink>
+        
+        <!-- Only show Orders link when authenticated -->
         <NuxtLink 
+          v-if="isAuthenticated"
           to="/orders" 
           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors"
           active-class="text-blue-600 bg-blue-50"
           @click="mobileMenuOpen = false"
         >
-          Orders
+          Zamówienia
         </NuxtLink>
+        
+        <!-- Show Login button when not authenticated -->
         <NuxtLink 
-          to="/about" 
-          class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors"
-          active-class="text-blue-600 bg-blue-50"
+          v-if="!isAuthenticated"
+          to="/login" 
+          class="block px-3 py-2 rounded-md text-base font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors text-center"
           @click="mobileMenuOpen = false"
         >
-          About
+          Zaloguj się
         </NuxtLink>
+        
+        <!-- User info and logout for mobile - only when authenticated -->
+        <div v-if="isAuthenticated" class="border-t border-gray-200 pt-4 mt-4">
+          <div class="px-3 py-2 flex items-center gap-2 mb-2">
+            <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm">
+              {{ userInitials }}
+            </div>
+            <span class="text-sm font-medium text-gray-700">{{ user?.fullName || user?.email }}</span>
+          </div>
+          <UButton
+            @click="handleLogout"
+            color="error"
+            variant="soft"
+            block
+            class="w-full"
+          >
+            Wyloguj
+          </UButton>
+        </div>
       </div>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuth } from '../../composables/useAuth'
 
 const mobileMenuOpen = ref(false)
+const router = useRouter()
+const { user, isAuthenticated, logout, initAuth } = useAuth()
+
+// Initialize auth on component mount
+if (process.client) {
+  initAuth()
+}
+
+// Compute user initials
+const userInitials = computed(() => {
+  if (!user.value) return ''
+  
+  if (user.value.fullName) {
+    const names = user.value.fullName.split(' ')
+    if (names.length >= 2) {
+      return (names[0]?.[0] + names[1]?.[0]).toUpperCase()
+    }
+    return names[0]?.[0]?.toUpperCase() || ''
+  }
+  
+  return user.value.email?.[0]?.toUpperCase() || ''
+})
+
+// Handle logout
+const handleLogout = async () => {
+  await logout()
+  router.push('/login')
+}
 </script>

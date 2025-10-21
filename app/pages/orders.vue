@@ -1,227 +1,225 @@
 <template>
-<div class="p-6 bg-gray-50 min-h-screen">
-    <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-3">
-            <h1 class="text-3xl font-bold text-gray-900">Zamówienia oczekujące</h1>
-            <!-- WebSocket Status Indicator -->
-            <div class="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium" :class="{
-                'bg-green-100 text-green-700': wsStatus === 'connected',
-                'bg-yellow-100 text-yellow-700': wsStatus === 'disconnected',
-                'bg-red-100 text-red-700': wsStatus === 'error'
-            }">
-                <span class="w-2 h-2 rounded-full" :class="{
-                    'bg-green-500 animate-pulse': wsStatus === 'connected',
-                    'bg-yellow-500': wsStatus === 'disconnected',
-                    'bg-red-500': wsStatus === 'error'
-                }"></span>
-                <span v-if="wsStatus === 'connected'">Połączono z serwerem</span>
-                <span v-else-if="wsStatus === 'error'">Serwer niedostępny</span>
-                <span v-else>Łączenie...</span>
+<div class="p-6 bg-gray-50 min-h-screen space-y-8">
+    <!-- Loading state during auth verification -->
+    <div v-if="isVerifyingAuth" class="flex items-center justify-center py-20">
+        <div class="text-center">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <p class="text-gray-600">Weryfikacja dostępu...</p>
+        </div>
+    </div>
+
+    <div v-else>
+    <!-- Search Bar -->
+    <div class="bg-white rounded-xl p-4 mb-6 shadow-sm border border-gray-200">
+        <div class="flex gap-4">
+            <div class="flex-1 relative">
+                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input
+                    v-model="searchQuery"
+                    type="text"
+                    placeholder="Szukaj zamówień po nazwisku, email, telefonie, firmie..."
+                    class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-black"
+                />
+                <UButton
+                    v-if="searchQuery"
+                    @click="searchQuery = ''"
+                    color="neutral"
+                    variant="ghost"
+                    size="xs"
+                    square
+                    class="absolute right-3 top-1/2 transform -translate-y-1/2"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </UButton>
+            </div>
+            <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
+                </svg>
+                <select
+                    v-model="sortOrder"
+                    class="py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-black bg-white cursor-pointer"
+                >
+                    <option value="newest">Najnowsze</option>
+                    <option value="oldest">Najstarsze</option>
+                </select>
             </div>
         </div>
-        <button
-            v-if="expandedOrderIds.length > 0"
-            @click="closeAll"
-            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors flex items-center gap-2"
-        >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Zamknij wszystkie
-        </button>
+        <div v-if="searchQuery" class="mt-2 text-sm text-black">
+            Znaleziono: <span class="font-semibold">{{ totalFilteredOrders }}</span> zamówień
+        </div>
     </div>
-    <div class="space-y-3">
-        <div 
-            v-for="order in orders" 
-            :key="order._id" 
-            @click="toggleExpand(order._id)"
-            class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
-            :class="{ 'ring-2 ring-blue-500': expandedOrderIds.includes(order._id) }"
-        >
-            <!-- Compact View -->
-            <div class="p-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3 flex-1">
-                        
-                        <span 
-                            v-if="order.isStudent" 
-                            class="px-2 py-1 text-xs font-semibold bg-red-200 text-black rounded text-center flex items-center justify-center gap-2"
-                        >
-                            <UIcon class="text-xl" name="picon:student"/>
-                            STUDENT
-                        </span>
-                        
-                        <!-- Name -->
-                        <h3 class="text-lg font-semibold text-gray-900">
-                            {{ order.name }} {{ order.surname }}
-                        </h3>
-                    </div>
-                    
-                    <div class="flex items-center gap-4">
-                        <!-- Copies -->
-                        <div class="flex items-center gap-1 text-sm">
-                            <span class="text-gray-500">Nakład:</span>
-                            <span class="font-semibold text-gray-900">{{ order.copies }}</span>
-                        </div>
-                        
-                        <!-- Status Badges -->
-                        <div class="flex gap-2">
-                            <span 
-                                class="px-2 py-1 text-xs font-medium rounded"
-                                :class="getStatusColor(order.upload_status)"
-                            >
-                                {{ order.upload_status }}
-                            </span>
-                            <span 
-                                class="px-2 py-1 text-xs font-medium rounded"
-                                :class="getOrderStatusColor(order.order_status)"
-                            >
-                                {{ order.order_status }}
-                            </span>
-                        </div>
-                        
-                        <!-- Expand Icon -->
-                        <svg 
-                            class="w-5 h-5 text-gray-400 transition-transform"
-                            :class="{ 'rotate-180': expandedOrderIds.includes(order._id) }"
-                            fill="none" 
-                            stroke="currentColor" 
-                            viewBox="0 0 24 24"
-                        >
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Expanded View -->
-            <div 
-                v-if="expandedOrderIds.includes(order._id)"
-                class="border-t border-gray-200 bg-gray-50 p-4 space-y-4"
-            >
-                <!-- Contact Information -->
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <p class="text-xs font-medium text-gray-500 uppercase mb-1">Adres e-mail</p>
-                        <UButton 
-                            :to="`mailto:${order.email}`"
-                            color="info"
-                            variant="soft"
-                            icon="i-heroicons-envelope"
-                            :label="order.email"
-                            @click.stop
-                            external
+
+
+
+
+    <draggable 
+        v-model="sectionOrderWithData" 
+        item-key="id"
+        handle=".drag-handle"
+        class="space-y-8"
+        @end="saveSectionOrder"
+    >
+        <template #item="{element: section}">
+            <div v-if="section.orders && section.orders.length > 0" :class="[
+                'rounded-xl p-6 shadow-sm border transition-all duration-200',
+                section.bgClass,
+                section.borderClass
+            ]">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <UButton class="drag-handle cursor-move" variant="ghost" size="xs" square>
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+                            </svg>
+                        </UButton>
+                        <component :is="section.id === 'pending' ? 'h1' : 'h2'" :class="['text-3xl font-bold', section.textClass]">
+                            {{ section.title }}
+                        </component>
+                        <OrdersPageWebSocketStatusIndicator v-if="section.id === 'pending'" :ws-status="wsStatus"/>
+                        <OrdersPageOrderTilesCloseAll 
+                            v-if="section.id === 'pending'"
+                            :expanded-order-ids="expandedOrderIds"
+                            @close-all="closeAll"
                         />
                     </div>
-                    <div>
-                        <p class="text-xs font-medium text-gray-500 uppercase mb-1">Numer Telefonu</p>
-                        <p class="text-sm text-gray-900">{{ order.phone }}</p>
-                    </div>
                 </div>
-                
-                <!-- Company -->
-                <div v-if="order.company">
-                    <p class="text-xs font-medium text-gray-500 uppercase mb-1">Firma</p>
-                    <p class="text-sm text-gray-900">{{ order.company }}</p>
-                </div>
-                
-                <!-- Specifications -->
-                <div v-if="order.specs && order.specs.length > 0">
-                    <p class="text-xs font-medium text-gray-500 uppercase mb-2">Specyfikacja</p>
-                    <div class="bg-white p-3 rounded border border-gray-200 space-y-2">
-                        <div v-for="(spec, index) in order.specs" :key="index" class="flex flex-wrap gap-x-4 gap-y-1">
-                            <span 
-                                v-for="(value, key) in spec" 
-                                :key="key"
-                                class="text-xs"
-                            >
-                                <span class="font-medium text-gray-700">{{ key }}:</span>
-                                <span class="text-gray-600 ml-1">{{ value }}</span>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Comments -->
-                <div v-if="order.comments">
-                    <p class="text-xs font-medium text-gray-500 uppercase mb-1">Uwagi</p>
-                    <p class="text-sm text-gray-700 bg-white p-3 rounded border border-gray-200">{{ order.comments }}</p>
-                </div>
-                
-                
-                <!-- File URL -->
-                <div>
-                    <p class="text-xs font-medium text-gray-500 uppercase mb-1">Plik</p>
-                    
-                    <!-- File is ready -->
-                    <a 
-                        v-if="order.file_url && order.upload_status === 'uploaded'"
-                        :href="order.file_url" 
-                        target="_blank"
-                        class="text-sm text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
-                        @click.stop
-                    >
-                        Pobierz plik
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                    </a>
-                    
-                    <!-- File is being uploaded -->
-                    <div 
-                        v-else-if="order.upload_status === 'pending' || order.upload_status === 'processing'"
-                        class="text-sm text-gray-600 inline-flex items-center gap-2"
-                    >
-                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Trwa przesyłanie pliku...
-                    </div>
-                    
-                    <!-- File upload failed -->
-                    <div 
-                        v-else-if="order.upload_status === 'upload_failed'"
-                        class="text-sm text-red-600 inline-flex items-center gap-1"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Błąd przesyłania pliku
-                    </div>
-                </div>
-                
-                <!-- Timestamp -->
-                <div>
-                    <p class="text-xs font-medium text-gray-500 uppercase mb-1">Data złożenia</p>
-                    <p class="text-sm text-gray-700">{{ formatDate(order.submitted_at) }}</p>
-                </div>
-                
-                <!-- Order ID -->
-                <div>
-                    <p class="text-xs font-medium text-gray-500 uppercase mb-1">Numer zamówienia</p>
-                    <p class="text-xs text-gray-600 font-mono">{{ order._id }}</p>
+                <div class="space-y-3">
+                    <OrdersPageOrderTile 
+                        v-for="order in section.orders" 
+                        :key="order._id" 
+                        :order="order"
+                        :is-expanded="expandedOrderIds.includes(order._id)"
+                        :section-type="section.id"
+                        @toggle-expand="toggleExpand"
+                        @accept-order="(orderId) => section.id === 'pending' && handleAcceptOrder(orderId)"
+                        @decline-order="(orderId, comment) => section.id === 'pending' && handleDeclineOrder(orderId, comment)"
+                        @mark-ready="(orderId) => section.id === 'in-progress' && handleMarkReady(orderId)"
+                        @notify-delay="(orderId) => section.id === 'in-progress' && handleNotifyDelay(orderId)"
+                        @archive-order="(orderId) => section.id === 'completed' && handleArchiveOrder(orderId)"
+                    />
                 </div>
             </div>
-        </div>
+        </template>
+    </draggable>
     </div>
 </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import draggable from 'vuedraggable'
 import {useGetOrderList} from "../../composables/useGetOrderList"
+import { useAcceptOrder } from '../../composables/useAcceptOrder'
+import { useDeclineOrder } from '../../composables/useDeclineOrder'
+import { useMarkReadyOrder } from '../../composables/useMarkReadyOrder'
+import { useNotifyDelayOrder } from '../../composables/useNotifyDelayOrder'
+import { useArchiveOrder } from '../../composables/useArchiveOrder'
 import type { Order } from '../../types/order'
 
+definePageMeta({
+  middleware: ['auth']
+})
+
+interface Section {
+  id: string
+  title: string
+  bgClass: string
+  borderClass: string
+  textClass: string
+  orders?: Order[]
+}
+
+// Auth verification state
+const isVerifyingAuth = ref(false)
+
 const {data, error} = useGetOrderList()
+const { acceptOrder } = useAcceptOrder()
+const { declineOrder } = useDeclineOrder()
+const { markReadyOrder } = useMarkReadyOrder()
+const { notifyDelayOrder } = useNotifyDelayOrder()
+const { archiveOrder } = useArchiveOrder()
 
 // Create reactive orders array that we can modify
 const ordersFromRest = computed(()=> data.value?.data?.orders || [])
 const liveOrders = ref<Order[]>([])
+const isLiveOrdersInitialized = ref(false)
+
+// Orders in different stages (with static placeholders for now)
+const ordersInProgress = ref<Order[]>([
+  {
+    _id: 'placeholder-in-progress-1',
+    name: 'Jan',
+    surname: 'Kowalski',
+    email: 'jan.kowalski@example.com',
+    phone: '+48 123 456 789',
+    company: 'Firma XYZ',
+    comments: 'Placeholder zamówienie w trakcie realizacji',
+    copies: 50,
+    specs: [{ 'Format': 'A4', 'Kolor': 'Czarno-biały' }],
+    upload_status: 'uploaded',
+    order_status: 'in_progress',
+    submitted_at: new Date().toISOString(),
+    isStudent: false,
+    id: 'placeholder-in-progress-1',
+    file_url: 'https://example.com/file.pdf'
+  }
+])
+
+const ordersCompleted = ref<Order[]>([
+  {
+    _id: 'placeholder-completed-1',
+    name: 'Anna',
+    surname: 'Nowak',
+    email: 'anna.nowak@example.com',
+    phone: '+48 987 654 321',
+    company: '',
+    comments: 'Placeholder zamówienie zakończone',
+    copies: 100,
+    specs: [{ 'Format': 'A4', 'Kolor': 'Kolorowy' }],
+    upload_status: 'uploaded',
+    order_status: 'completed',
+    submitted_at: new Date(Date.now() - 86400000).toISOString(),
+    isStudent: true,
+    id: 'placeholder-completed-1',
+    file_url: 'https://example.com/file2.pdf'
+  }
+])
+
+const ordersRejected = ref<Order[]>([
+  {
+    _id: 'placeholder-rejected-1',
+    name: 'Piotr',
+    surname: 'Wiśniewski',
+    email: 'piotr.wisniewski@example.com',
+    phone: '+48 555 666 777',
+    company: 'ABC Sp. z o.o.',
+    comments: 'Odrzucone - niewystarczająca jakość pliku',
+    copies: 25,
+    specs: [{ 'Format': 'A3', 'Kolor': 'Czarno-biały' }],
+    upload_status: 'uploaded',
+    order_status: 'cancelled',
+    submitted_at: new Date(Date.now() - 172800000).toISOString(),
+    isStudent: false,
+    id: 'placeholder-rejected-1',
+    file_url: 'https://example.com/file3.pdf',
+    isRejected: true
+  }
+])
+
+// Modal state
+const isDeclineModalOpen = ref(false)
+const declineReason = ref('')
+const currentOrderIdForDecline = ref<string | null>(null)
 
 // Combine REST orders with live orders, prioritizing live updates
 const orders = computed(() => {
-  if (liveOrders.value.length > 0) {
+  // Once live orders are initialized, always use them even if empty
+  if (isLiveOrdersInitialized.value) {
     return liveOrders.value
   }
   return ordersFromRest.value
@@ -232,6 +230,109 @@ const ws = ref<WebSocket | null>(null)
 const wsStatus = ref<'disconnected' | 'connected' | 'error'>('disconnected')
 
 const expandedOrderIds = ref<string[]>([])
+const searchQuery = ref('')
+const sortOrder = ref<'newest' | 'oldest'>('newest')
+
+// Section order management
+const defaultSectionOrder: Section[] = [
+  { id: 'pending', title: 'Zamówienia oczekujące', bgClass: 'bg-amber-50', borderClass: 'border-amber-200', textClass: 'text-amber-900' },
+  { id: 'in-progress', title: 'Zamówienia w trakcie realizacji', bgClass: 'bg-blue-50', borderClass: 'border-blue-200', textClass: 'text-blue-900' },
+  { id: 'completed', title: 'Zamówienia zakończone', bgClass: 'bg-green-50', borderClass: 'border-green-200', textClass: 'text-green-900' },
+  { id: 'rejected', title: 'Zamówienia odrzucone', bgClass: 'bg-red-50', borderClass: 'border-red-200', textClass: 'text-red-900' }
+]
+
+const sectionOrder = ref<Section[]>(loadSectionOrder())
+
+// Search filter function
+const filterOrders = (ordersList: Order[]) => {
+  if (!searchQuery.value.trim()) return ordersList
+  
+  const query = searchQuery.value.toLowerCase().trim()
+  
+  return ordersList.filter(order => {
+    const searchableFields = [
+      order.name,
+      order.surname,
+      order.email,
+      order.phone,
+      order.company,
+      order.comments,
+      `${order.name} ${order.surname}`
+    ].map(field => (field || '').toLowerCase())
+    
+    return searchableFields.some(field => field.includes(query))
+  })
+}
+
+// Sort orders by date
+const sortOrders = (ordersList: Order[]) => {
+  return [...ordersList].sort((a, b) => {
+    const dateA = new Date(a.submitted_at).getTime()
+    const dateB = new Date(b.submitted_at).getTime()
+    
+    return sortOrder.value === 'newest' ? dateB - dateA : dateA - dateB
+  })
+}
+
+// Computed section data with orders
+const sectionsWithOrders = computed(() => {
+  return sectionOrder.value.map((section: Section) => {
+    const sectionOrders = section.id === 'pending' ? orders.value
+      : section.id === 'in-progress' ? ordersInProgress.value
+      : section.id === 'completed' ? ordersCompleted.value
+      : ordersRejected.value
+    
+    const filtered = filterOrders(sectionOrders)
+    const sorted = sortOrders(filtered)
+    
+    return {
+      ...section,
+      orders: sorted
+    }
+  })
+})
+
+// Total filtered orders count
+const totalFilteredOrders = computed(() => {
+  return sectionsWithOrders.value.reduce((total, section) => 
+    total + (section.orders?.length || 0), 0
+  )
+})
+
+// Use computed sections for draggable
+const sectionOrderWithData = computed({
+  get: () => sectionsWithOrders.value,
+  set: (newOrder: Section[]) => {
+    sectionOrder.value = newOrder.map((s: Section) => ({
+      id: s.id,
+      title: s.title,
+      bgClass: s.bgClass,
+      borderClass: s.borderClass,
+      textClass: s.textClass
+    }))
+  }
+})
+
+// Load section order from localStorage
+function loadSectionOrder() {
+  if (typeof window === 'undefined') return defaultSectionOrder
+  const saved = localStorage.getItem('orderSectionOrder')
+  if (saved) {
+    try {
+      return JSON.parse(saved)
+    } catch {
+      return defaultSectionOrder
+    }
+  }
+  return defaultSectionOrder
+}
+
+// Save section order to localStorage
+function saveSectionOrder() {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('orderSectionOrder', JSON.stringify(sectionOrder.value))
+  }
+}
 
 const toggleExpand = (orderId: string) => {
     const index = expandedOrderIds.value.indexOf(orderId)
@@ -251,39 +352,6 @@ const toggleExpand = (orderId: string) => {
 
 const closeAll = () => {
     expandedOrderIds.value = []
-}
-
-const getStatusColor = (status: string) => {
-    const statusMap: Record<string, string> = {
-        'completed': 'bg-green-100 text-green-800',
-        'pending': 'bg-yellow-100 text-yellow-800',
-        'processing': 'bg-blue-100 text-blue-800',
-        'failed': 'bg-red-100 text-red-800',
-    }
-    return statusMap[status.toLowerCase()] || 'bg-gray-100 text-gray-800'
-}
-
-const getOrderStatusColor = (status: string) => {
-    const statusMap: Record<string, string> = {
-        'completed': 'bg-green-100 text-green-800',
-        'pending': 'bg-yellow-100 text-yellow-800',
-        'in_progress': 'bg-blue-100 text-blue-800',
-        'ready': 'bg-purple-100 text-purple-800',
-        'cancelled': 'bg-red-100 text-red-800',
-    }
-    return statusMap[status.toLowerCase()] || 'bg-gray-100 text-gray-800'
-}
-
-const formatDate = (dateString: string) => {
-    if (!dateString) return 'N/A'
-    const date = new Date(dateString)
-    return date.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    })
 }
 
 // WebSocket functionality
@@ -349,12 +417,116 @@ onMounted(() => {
   setTimeout(() => {
     // Set initial orders from REST
     liveOrders.value = [...ordersFromRest.value]
+    isLiveOrdersInitialized.value = true
     console.log(`✅ Wczytałem ilość zamówień: ${liveOrders.value.length} z serwera `)
     
     // Connect to WebSocket for real-time updates
     connectWebSocket()
   }, 500)
 })
+
+// Order action handlers
+const handleAcceptOrder = async (orderId: string) => {
+  try {
+    const result = await acceptOrder(orderId)
+    console.log('Accept result:', result)
+    
+    // Move order from waiting to in-progress
+    const orderIndex = liveOrders.value.findIndex(o => o._id === orderId)
+    if (orderIndex !== -1) {
+      const [order] = liveOrders.value.splice(orderIndex, 1)
+      if (order) {
+        order.order_status = 'in_progress'
+        ordersInProgress.value.push(order)
+      }
+    }
+  } catch (error) {
+    console.error('Error accepting order:', error)
+    // TODO: Show error notification
+  }
+}
+
+//Decline modal
+const openDeclineModal = (orderId: string) => {
+  currentOrderIdForDecline.value = orderId
+  isDeclineModalOpen.value = true
+}
+
+const closeDeclineModal = () => {
+  isDeclineModalOpen.value = false
+  currentOrderIdForDecline.value = null
+}
+
+const handleDeclineOrder = async (orderId: string, comment: string) => {
+  try {
+    const result = await declineOrder(orderId, comment)
+    console.log('Decline result:', result)
+    
+    // Move order from waiting to rejected
+    const orderIndex = liveOrders.value.findIndex(o => o._id === orderId)
+    if (orderIndex !== -1) {
+      const [order] = liveOrders.value.splice(orderIndex, 1)
+      if (order) {
+        order.order_status = 'cancelled'
+        order.isRejected = true
+        ordersRejected.value.push(order)
+      }
+    }
+  } catch (error) {
+    console.error('Error declining order:', error)
+    // TODO: Show error notification
+  }
+}
+
+// In-progress order handlers
+const handleMarkReady = async (orderId: string) => {
+  try {
+    const result = await markReadyOrder(orderId)
+    console.log('Mark ready result:', result)
+    
+    // Move order from in-progress to completed
+    const orderIndex = ordersInProgress.value.findIndex(o => o._id === orderId)
+    if (orderIndex !== -1) {
+      const [order] = ordersInProgress.value.splice(orderIndex, 1)
+      if (order) {
+        order.order_status = 'ready'
+        ordersCompleted.value.push(order)
+      }
+    }
+  } catch (error) {
+    console.error('Error marking order as ready:', error)
+    // TODO: Show error notification
+  }
+}
+
+const handleNotifyDelay = async (orderId: string) => {
+  try {
+    const result = await notifyDelayOrder(orderId)
+    console.log('Notify delay result:', result)
+    
+    alert('Powiadomienie o opóźnieniu zostało wysłane do klienta')
+  } catch (error) {
+    console.error('Error sending delay notification:', error)
+    alert('Błąd podczas wysyłania powiadomienia')
+  }
+}
+
+const handleArchiveOrder = async (orderId: string) => {
+  try {
+    const result = await archiveOrder(orderId)
+    console.log('Archive result:', result)
+    
+    // Remove order from completed list
+    const orderIndex = ordersCompleted.value.findIndex(o => o._id === orderId)
+    if (orderIndex !== -1) {
+      ordersCompleted.value.splice(orderIndex, 1)
+      console.log('✅ Zamówienie zostało zarchiwizowane')
+    }
+  } catch (error) {
+    console.error('Error archiving order:', error)
+    // TODO: Show error notification
+  }
+}
 
 // Cleanup on unmount
 onUnmounted(() => {

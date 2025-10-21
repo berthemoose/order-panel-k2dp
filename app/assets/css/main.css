@@ -1,2 +1,9 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/* Global styles */
+button[class*="UButton"],
+.UButton,
+[data-ubutton] {
+  cursor: pointer !important;
+}

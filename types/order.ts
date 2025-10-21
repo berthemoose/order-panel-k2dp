@@ -14,6 +14,8 @@ export interface Order {
     isStudent: boolean;
     id: string;
     file_url: string;
+    isRejected?: boolean;
+    product_name?: string;
 }
 
 export interface Orders {
