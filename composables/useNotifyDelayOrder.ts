@@ -1,4 +1,5 @@
 import { useApi } from './useApi'
+import { useAuthenticatedFetch } from './useAuthenticatedFetch'
 
 interface NotifyDelayOrderResponse {
   success: boolean
@@ -8,6 +9,7 @@ interface NotifyDelayOrderResponse {
 
 export const useNotifyDelayOrder = () => {
   const { orderUrl } = useApi()
+  const { authenticatedFetch } = useAuthenticatedFetch()
   const toast = useToast()
 
   const notifyDelayOrder = async (orderId: string, delayMessage?: string): Promise<NotifyDelayOrderResponse> => {
@@ -16,11 +18,8 @@ export const useNotifyDelayOrder = () => {
     try {
       console.log('⚠️ [NOTIFY DELAY] Order ID:', orderId)
       
-      const response = await $fetch<NotifyDelayOrderResponse>(`${orderUrl}/orders/${orderId}/notify-delay`, {
+      const response = await authenticatedFetch<NotifyDelayOrderResponse>(`${orderUrl}/orders/${orderId}/notify-delay`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: {
           message: delayMessage || 'Your order will be delayed'
         }

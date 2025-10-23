@@ -44,9 +44,10 @@ const handleClose = () => {
                 </div>
 
                 <div class="w-full flex flex-col text-left justify-center">
-                    <p class="text-sm text-black pt-3 pb-1">Komentarz</p>
+                    <p class="text-xs text-black pt-3 pb-1">Wkrótce: możliwość wysłania powiadomienia SMS i E-Mail o odrzuceniu zamówienia i prośbę o kontakt</p>
                     <UTextarea 
                         v-model="comment"
+                        disabled
                         class="w-full min-h-[200px]" 
                         :rows="16" 
                         placeholder="Dodaj komentarz (brak komentarza spowoduje wysłanie wiadomości domyślnej)" 

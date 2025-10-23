@@ -1,4 +1,5 @@
 import { useApi } from './useApi'
+import { useAuthenticatedFetch } from './useAuthenticatedFetch'
 
 interface DeclineOrderResponse {
   success: boolean
@@ -8,35 +9,43 @@ interface DeclineOrderResponse {
 
 export const useDeclineOrder = () => {
   const { orderUrl } = useApi()
+  const { authenticatedFetch } = useAuthenticatedFetch()
   const toast = useToast()
 
-  const declineOrder = async (orderId: string, reason: string): Promise<DeclineOrderResponse> => {
+  const declineOrder = async (orderId: string, comment: string): Promise<DeclineOrderResponse> => {
     toast.add({ title: "Activating 'Decline Order'" })
     
     try {
       console.log('🔴 [DECLINE ORDER] Order ID:', orderId)
-      console.log('🔴 [DECLINE ORDER] Reason:', reason)
+      console.log('🔴 [DECLINE ORDER] Comment:', comment)
       
-      const response = await $fetch<DeclineOrderResponse>(`${orderUrl}/orders/${orderId}/decline`, {
+      const response = await authenticatedFetch<any>(`${orderUrl}/decline-order/${orderId}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
         body: {
-          reason
+          comment
         }
       })
       
       console.log('✅ [DECLINE ORDER] Success:', response)
-      return response
-      
-    } catch (error: any) {
-      console.warn('⚠️ [DECLINE ORDER] Backend not available, using fallback:', error)
-      // Return success anyway so UI can update
+      toast.add({ 
+        title: "Zamówienie odrzucone",
+        description: "Zamówienie zostało przeniesione do odrzuconych",
+        color: 'error'
+      })
       return {
         success: true,
-        message: 'Order declined (frontend only - backend not implemented yet)'
+        message: response.message || 'Order declined successfully',
+        data: response
       }
+      
+    } catch (error: any) {
+      console.error('❌ [DECLINE ORDER] Error:', error)
+      toast.add({ 
+        title: "Błąd",
+        description: "Nie udało się odrzucić zamówienia",
+        color: 'error'
+      })
+      throw error
     }
   }
 

@@ -1,4 +1,5 @@
 import { useApi } from './useApi'
+import { useAuthenticatedFetch } from './useAuthenticatedFetch'
 
 interface AcceptOrderResponse {
   success: boolean
@@ -8,6 +9,7 @@ interface AcceptOrderResponse {
 
 export const useAcceptOrder = () => {
   const { orderUrl } = useApi()
+  const { authenticatedFetch } = useAuthenticatedFetch()
   const toast = useToast()
 
   const acceptOrder = async (orderId: string): Promise<AcceptOrderResponse> => {
@@ -16,23 +18,30 @@ export const useAcceptOrder = () => {
     try {
       console.log('🟢 [ACCEPT ORDER] Order ID:', orderId)
       
-      const response = await $fetch<AcceptOrderResponse>(`${orderUrl}/orders/${orderId}/accept`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      const response = await authenticatedFetch<any>(`${orderUrl}/make-order-pending/${orderId}`, {
+        method: 'POST'
       })
       
       console.log('✅ [ACCEPT ORDER] Success:', response)
-      return response
-      
-    } catch (error: any) {
-      console.warn('⚠️ [ACCEPT ORDER] Backend not available, using fallback:', error)
-      // Return success anyway so UI can update
+      toast.add({ 
+        title: "Zamówienie zaakceptowane",
+        description: "Zamówienie zostało przeniesione do realizacji",
+        color: 'success'
+      })
       return {
         success: true,
-        message: 'Order accepted (frontend only - backend not implemented yet)'
+        message: response.message || 'Order moved to pending orders',
+        data: response
       }
+      
+    } catch (error: any) {
+      console.error('❌ [ACCEPT ORDER] Error:', error)
+      toast.add({ 
+        title: "Błąd",
+        description: "Nie udało się zaakceptować zamówienia",
+        color: 'error'
+      })
+      throw error
     }
   }
 

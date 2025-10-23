@@ -54,71 +54,83 @@
         </div>
     </div>
 
-
-
-
-    <draggable 
-        v-model="sectionOrderWithData" 
-        item-key="id"
-        handle=".drag-handle"
-        class="space-y-8"
-        @end="saveSectionOrder"
-    >
-        <template #item="{element: section}">
-            <div v-if="section.orders && section.orders.length > 0" :class="[
-                'rounded-xl p-6 shadow-sm border transition-all duration-200',
-                section.bgClass,
-                section.borderClass
-            ]">
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center gap-3">
-                        <UButton class="drag-handle cursor-move" variant="ghost" size="xs" square>
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
-                            </svg>
-                        </UButton>
-                        <component :is="section.id === 'pending' ? 'h1' : 'h2'" :class="['text-3xl font-bold', section.textClass]">
-                            {{ section.title }}
-                        </component>
-                        <OrdersPageWebSocketStatusIndicator v-if="section.id === 'pending'" :ws-status="wsStatus"/>
-                        <OrdersPageOrderTilesCloseAll 
-                            v-if="section.id === 'pending'"
-                            :expanded-order-ids="expandedOrderIds"
-                            @close-all="closeAll"
+    <ClientOnly>
+        <div v-if="!isDataInitialized" class="flex items-center justify-center py-20">
+            <div class="text-center">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                <p class="text-gray-600">Ładowanie zamówień...</p>
+            </div>
+        </div>
+        <draggable v-else 
+            v-model="sectionOrderWithData" 
+            item-key="id"
+            handle=".drag-handle"
+            class="space-y-8"
+            @end="saveSectionOrder"
+        >
+            <template #item="{element: section}">
+                <div v-if="section.orders && section.orders.length > 0" :class="[
+                    'rounded-xl p-6 shadow-sm border transition-all duration-200',
+                    section.bgClass,
+                    section.borderClass
+                ]">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <UButton class="drag-handle cursor-move" variant="ghost" size="xs" square>
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+                                </svg>
+                            </UButton>
+                            <h1 v-if="section.id === 'pending'" :class="['text-3xl font-bold', section.textClass]">
+                                {{ section.title }}
+                            </h1>
+                            <h2 v-else :class="['text-3xl font-bold', section.textClass]">
+                                {{ section.title }}
+                            </h2>
+                            <OrdersPageWebSocketStatusIndicator v-if="section.id === 'pending'" :ws-status="wsStatus"/>
+                            <OrdersPageOrderTilesCloseAll 
+                                v-if="section.id === 'pending'"
+                                :expanded-order-ids="expandedOrderIds"
+                                @close-all="closeAll"
+                            />
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <OrdersPageOrderTile 
+                            v-for="order in section.orders" 
+                            :key="order._id" 
+                            :order="order"
+                            :is-expanded="expandedOrderIds.includes(order._id)"
+                            :section-type="section.id"
+                            @toggle-expand="toggleExpand"
+                            @accept-order="(orderId) => section.id === 'pending' && handleAcceptOrder(orderId)"
+                            @decline-order="(orderId, comment) => section.id === 'pending' && handleDeclineOrder(orderId, comment)"
+                            @mark-ready="(orderId) => section.id === 'in-progress' && handleMarkReady(orderId)"
+                            @notify-delay="(orderId) => section.id === 'in-progress' && handleNotifyDelay(orderId)"
+                            @archive-order="(orderId) => (section.id === 'completed' && handleArchiveOrder(orderId)) || (section.id === 'rejected' && handleArchiveRejectedOrder(orderId))"
                         />
                     </div>
                 </div>
-                <div class="space-y-3">
-                    <OrdersPageOrderTile 
-                        v-for="order in section.orders" 
-                        :key="order._id" 
-                        :order="order"
-                        :is-expanded="expandedOrderIds.includes(order._id)"
-                        :section-type="section.id"
-                        @toggle-expand="toggleExpand"
-                        @accept-order="(orderId) => section.id === 'pending' && handleAcceptOrder(orderId)"
-                        @decline-order="(orderId, comment) => section.id === 'pending' && handleDeclineOrder(orderId, comment)"
-                        @mark-ready="(orderId) => section.id === 'in-progress' && handleMarkReady(orderId)"
-                        @notify-delay="(orderId) => section.id === 'in-progress' && handleNotifyDelay(orderId)"
-                        @archive-order="(orderId) => section.id === 'completed' && handleArchiveOrder(orderId)"
-                    />
-                </div>
-            </div>
-        </template>
-    </draggable>
+            </template>
+        </draggable>
+    </ClientOnly>
     </div>
 </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import draggable from 'vuedraggable'
 import {useGetOrderList} from "../../composables/useGetOrderList"
+import {useGetPendingOrderList} from "../../composables/useGetPendingOrderList"
+import {useGetFinishedOrderList} from "../../composables/useGetFinishedOrderList"
+import {useGetCancelledOrderList} from "../../composables/useGetCancelledOrderList"
 import { useAcceptOrder } from '../../composables/useAcceptOrder'
 import { useDeclineOrder } from '../../composables/useDeclineOrder'
 import { useMarkReadyOrder } from '../../composables/useMarkReadyOrder'
 import { useNotifyDelayOrder } from '../../composables/useNotifyDelayOrder'
 import { useArchiveOrder } from '../../composables/useArchiveOrder'
+import { useArchiveRejectedOrder } from '../../composables/useArchiveRejectedOrder'
 import type { Order } from '../../types/order'
 
 definePageMeta({
@@ -137,79 +149,48 @@ interface Section {
 // Auth verification state
 const isVerifyingAuth = ref(false)
 
+// Data initialization state
+const isDataInitialized = ref(false)
+
 const {data, error} = useGetOrderList()
+
+const {data: pendingData, error: pendingError} = useGetPendingOrderList()
+const {data: finishedData, error: finishedError} = useGetFinishedOrderList()
+const {data: cancelledData, error: cancelledError} = useGetCancelledOrderList()
+
 const { acceptOrder } = useAcceptOrder()
 const { declineOrder } = useDeclineOrder()
 const { markReadyOrder } = useMarkReadyOrder()
 const { notifyDelayOrder } = useNotifyDelayOrder()
 const { archiveOrder } = useArchiveOrder()
+const { archiveRejectedOrder } = useArchiveRejectedOrder()
+const toast = useToast()
 
 // Create reactive orders array that we can modify
+// NOTE: Naming convention mapping:
+// - DB 'orders' collection → Frontend 'pending' section (new incoming orders)
+// - DB 'pending-orders' collection → Frontend 'in-progress' section (accepted orders)
+// - DB 'finished-orders' collection → Frontend 'completed' section (finished orders)
+// - DB 'cancelled-orders' collection → Frontend 'rejected' section (declined orders)
+// - DB 'orders-archive' collection → Frontend '/archive' page (archived orders, removed from active view)
 const ordersFromRest = computed(()=> data.value?.data?.orders || [])
 const liveOrders = ref<Order[]>([])
 const isLiveOrdersInitialized = ref(false)
 
-// Orders in different stages (with static placeholders for now)
-const ordersInProgress = ref<Order[]>([
-  {
-    _id: 'placeholder-in-progress-1',
-    name: 'Jan',
-    surname: 'Kowalski',
-    email: 'jan.kowalski@example.com',
-    phone: '+48 123 456 789',
-    company: 'Firma XYZ',
-    comments: 'Placeholder zamówienie w trakcie realizacji',
-    copies: 50,
-    specs: [{ 'Format': 'A4', 'Kolor': 'Czarno-biały' }],
-    upload_status: 'uploaded',
-    order_status: 'in_progress',
-    submitted_at: new Date().toISOString(),
-    isStudent: false,
-    id: 'placeholder-in-progress-1',
-    file_url: 'https://example.com/file.pdf'
-  }
-])
+// Pending orders from REST API (DB 'pending-orders' = frontend 'in-progress')
+const pendingOrdersFromRest = computed(()=> pendingData.value?.data?.orders || [])
+const livePendingOrders = ref<Order[]>([])
+const isLivePendingOrdersInitialized = ref(false)
 
-const ordersCompleted = ref<Order[]>([
-  {
-    _id: 'placeholder-completed-1',
-    name: 'Anna',
-    surname: 'Nowak',
-    email: 'anna.nowak@example.com',
-    phone: '+48 987 654 321',
-    company: '',
-    comments: 'Placeholder zamówienie zakończone',
-    copies: 100,
-    specs: [{ 'Format': 'A4', 'Kolor': 'Kolorowy' }],
-    upload_status: 'uploaded',
-    order_status: 'completed',
-    submitted_at: new Date(Date.now() - 86400000).toISOString(),
-    isStudent: true,
-    id: 'placeholder-completed-1',
-    file_url: 'https://example.com/file2.pdf'
-  }
-])
+// Finished orders from REST API (DB 'finished-orders' = frontend 'completed')
+const finishedOrdersFromRest = computed(()=> finishedData.value?.data?.orders || [])
+const liveFinishedOrders = ref<Order[]>([])
+const isLiveFinishedOrdersInitialized = ref(false)
 
-const ordersRejected = ref<Order[]>([
-  {
-    _id: 'placeholder-rejected-1',
-    name: 'Piotr',
-    surname: 'Wiśniewski',
-    email: 'piotr.wisniewski@example.com',
-    phone: '+48 555 666 777',
-    company: 'ABC Sp. z o.o.',
-    comments: 'Odrzucone - niewystarczająca jakość pliku',
-    copies: 25,
-    specs: [{ 'Format': 'A3', 'Kolor': 'Czarno-biały' }],
-    upload_status: 'uploaded',
-    order_status: 'cancelled',
-    submitted_at: new Date(Date.now() - 172800000).toISOString(),
-    isStudent: false,
-    id: 'placeholder-rejected-1',
-    file_url: 'https://example.com/file3.pdf',
-    isRejected: true
-  }
-])
+// Cancelled orders from REST API (DB 'cancelled-orders' = frontend 'rejected')
+const cancelledOrdersFromRest = computed(()=> cancelledData.value?.data?.orders || [])
+const liveCancelledOrders = ref<Order[]>([])
+const isLiveCancelledOrdersInitialized = ref(false)
 
 // Modal state
 const isDeclineModalOpen = ref(false)
@@ -223,6 +204,30 @@ const orders = computed(() => {
     return liveOrders.value
   }
   return ordersFromRest.value
+})
+
+// Pending orders computed
+const pendingOrders = computed(() => {
+  if (isLivePendingOrdersInitialized.value) {
+    return livePendingOrders.value
+  }
+  return pendingOrdersFromRest.value
+})
+
+// Finished orders computed
+const finishedOrders = computed(() => {
+  if (isLiveFinishedOrdersInitialized.value) {
+    return liveFinishedOrders.value
+  }
+  return finishedOrdersFromRest.value
+})
+
+// Cancelled orders computed
+const cancelledOrders = computed(() => {
+  if (isLiveCancelledOrdersInitialized.value) {
+    return liveCancelledOrders.value
+  }
+  return cancelledOrdersFromRest.value
 })
 
 // WebSocket connection
@@ -240,7 +245,6 @@ const defaultSectionOrder: Section[] = [
   { id: 'completed', title: 'Zamówienia zakończone', bgClass: 'bg-green-50', borderClass: 'border-green-200', textClass: 'text-green-900' },
   { id: 'rejected', title: 'Zamówienia odrzucone', bgClass: 'bg-red-50', borderClass: 'border-red-200', textClass: 'text-red-900' }
 ]
-
 const sectionOrder = ref<Section[]>(loadSectionOrder())
 
 // Search filter function
@@ -278,9 +282,9 @@ const sortOrders = (ordersList: Order[]) => {
 const sectionsWithOrders = computed(() => {
   return sectionOrder.value.map((section: Section) => {
     const sectionOrders = section.id === 'pending' ? orders.value
-      : section.id === 'in-progress' ? ordersInProgress.value
-      : section.id === 'completed' ? ordersCompleted.value
-      : ordersRejected.value
+      : section.id === 'in-progress' ? pendingOrders.value
+      : section.id === 'completed' ? finishedOrders.value
+      : cancelledOrders.value
     
     const filtered = filterOrders(sectionOrders)
     const sorted = sortOrders(filtered)
@@ -377,6 +381,14 @@ const connectWebSocket = () => {
         if (!exists) {
           // Add new order to the top of the list
           liveOrders.value = [message.data, ...liveOrders.value]
+          
+          // Show toast notification for new order
+          toast.add({
+            title: 'Nowe zamówienie!',
+            description: `Zamówienie od ${message.data.name} ${message.data.surname}`,
+            color: 'success',
+            icon: 'i-heroicons-bell'
+          })
         }
       } else if (message.type === 'order_updated') {
         console.log('📝 Aktualizacja zamówienia:', message.data)
@@ -409,20 +421,62 @@ const connectWebSocket = () => {
   }
 }
 
+// Watch for orders data (DB 'orders' → Frontend 'pending')
+watch(data, (newData) => {
+  if (newData && !isLiveOrdersInitialized.value) {
+    const orders = newData.data?.orders || []
+    liveOrders.value = [...orders]
+    isLiveOrdersInitialized.value = true
+    console.log(`✅ Wczytałem ilość zamówień: ${liveOrders.value.length} z serwera`)
+  }
+}, { immediate: true })
+
+// Watch for pending orders data (DB 'pending-orders' → Frontend 'in-progress')
+watch(pendingData, (newData) => {
+  if (newData && !isLivePendingOrdersInitialized.value) {
+    const orders = newData.data?.orders || []
+    livePendingOrders.value = [...orders]
+    isLivePendingOrdersInitialized.value = true
+    console.log(`✅ Wczytałem ilość zamówień oczekujących: ${livePendingOrders.value.length} z serwera`)
+  }
+}, { immediate: true })
+
+// Watch for finished orders data (DB 'finished-orders' → Frontend 'completed')
+watch(finishedData, (newData) => {
+  if (newData && !isLiveFinishedOrdersInitialized.value) {
+    const orders = newData.data?.orders || []
+    liveFinishedOrders.value = [...orders]
+    isLiveFinishedOrdersInitialized.value = true
+    console.log(`✅ Wczytałem ilość zamówień zakończonych: ${liveFinishedOrders.value.length} z serwera`)
+  }
+}, { immediate: true })
+
+// Watch for cancelled orders data (DB 'cancelled-orders' → Frontend 'rejected')
+watch(cancelledData, (newData) => {
+  if (newData && !isLiveCancelledOrdersInitialized.value) {
+    const orders = newData.data?.orders || []
+    liveCancelledOrders.value = [...orders]
+    isLiveCancelledOrdersInitialized.value = true
+    console.log(`✅ Wczytałem ilość zamówień odrzuconych: ${liveCancelledOrders.value.length} z serwera`)
+  }
+}, { immediate: true })
+
+// Watch for all data sources to be initialized before connecting WebSocket
+watch(
+  [isLiveOrdersInitialized, isLivePendingOrdersInitialized, isLiveFinishedOrdersInitialized, isLiveCancelledOrdersInitialized],
+  ([orders, pending, finished, cancelled]) => {
+    if (orders && pending && finished && cancelled && !isDataInitialized.value) {
+      isDataInitialized.value = true
+      console.log('✅ Wszystkie dane zostały załadowane - łączę z WebSocket')
+      connectWebSocket()
+    }
+  },
+  { immediate: true }
+)
+
 // Initialize on mount
 onMounted(() => {
   console.log('📡 Otwieram nowe połączenie z serwerem odbioru zamówień')
-  
-  // Wait for initial REST data to load
-  setTimeout(() => {
-    // Set initial orders from REST
-    liveOrders.value = [...ordersFromRest.value]
-    isLiveOrdersInitialized.value = true
-    console.log(`✅ Wczytałem ilość zamówień: ${liveOrders.value.length} z serwera `)
-    
-    // Connect to WebSocket for real-time updates
-    connectWebSocket()
-  }, 500)
 })
 
 // Order action handlers
@@ -431,18 +485,17 @@ const handleAcceptOrder = async (orderId: string) => {
     const result = await acceptOrder(orderId)
     console.log('Accept result:', result)
     
-    // Move order from waiting to in-progress
+    // Move order from 'orders' DB (pending section) to 'pending-orders' DB (in-progress section)
     const orderIndex = liveOrders.value.findIndex(o => o._id === orderId)
     if (orderIndex !== -1) {
       const [order] = liveOrders.value.splice(orderIndex, 1)
       if (order) {
         order.order_status = 'in_progress'
-        ordersInProgress.value.push(order)
+        livePendingOrders.value.push(order)
       }
     }
   } catch (error) {
     console.error('Error accepting order:', error)
-    // TODO: Show error notification
   }
 }
 
@@ -462,19 +515,18 @@ const handleDeclineOrder = async (orderId: string, comment: string) => {
     const result = await declineOrder(orderId, comment)
     console.log('Decline result:', result)
     
-    // Move order from waiting to rejected
+    // Move order from 'orders' DB (pending section) to 'cancelled-orders' DB (rejected section)
     const orderIndex = liveOrders.value.findIndex(o => o._id === orderId)
     if (orderIndex !== -1) {
       const [order] = liveOrders.value.splice(orderIndex, 1)
       if (order) {
         order.order_status = 'cancelled'
         order.isRejected = true
-        ordersRejected.value.push(order)
+        liveCancelledOrders.value.push(order)
       }
     }
   } catch (error) {
     console.error('Error declining order:', error)
-    // TODO: Show error notification
   }
 }
 
@@ -484,18 +536,17 @@ const handleMarkReady = async (orderId: string) => {
     const result = await markReadyOrder(orderId)
     console.log('Mark ready result:', result)
     
-    // Move order from in-progress to completed
-    const orderIndex = ordersInProgress.value.findIndex(o => o._id === orderId)
+    // Move order from 'pending-orders' DB (in-progress section) to 'finished-orders' DB (completed section)
+    const orderIndex = livePendingOrders.value.findIndex(o => o._id === orderId)
     if (orderIndex !== -1) {
-      const [order] = ordersInProgress.value.splice(orderIndex, 1)
+      const [order] = livePendingOrders.value.splice(orderIndex, 1)
       if (order) {
         order.order_status = 'ready'
-        ordersCompleted.value.push(order)
+        liveFinishedOrders.value.push(order)
       }
     }
   } catch (error) {
     console.error('Error marking order as ready:', error)
-    // TODO: Show error notification
   }
 }
 
@@ -516,15 +567,30 @@ const handleArchiveOrder = async (orderId: string) => {
     const result = await archiveOrder(orderId)
     console.log('Archive result:', result)
     
-    // Remove order from completed list
-    const orderIndex = ordersCompleted.value.findIndex(o => o._id === orderId)
+    // Remove order from 'finished-orders' DB (completed section)
+    const orderIndex = liveFinishedOrders.value.findIndex(o => o._id === orderId)
     if (orderIndex !== -1) {
-      ordersCompleted.value.splice(orderIndex, 1)
+      liveFinishedOrders.value.splice(orderIndex, 1)
       console.log('✅ Zamówienie zostało zarchiwizowane')
     }
   } catch (error) {
     console.error('Error archiving order:', error)
-    // TODO: Show error notification
+  }
+}
+
+const handleArchiveRejectedOrder = async (orderId: string) => {
+  try {
+    const result = await archiveRejectedOrder(orderId)
+    console.log('Archive rejected order result:', result)
+    
+    // Remove order from 'cancelled-orders' DB (rejected section)
+    const orderIndex = liveCancelledOrders.value.findIndex(o => o._id === orderId)
+    if (orderIndex !== -1) {
+      liveCancelledOrders.value.splice(orderIndex, 1)
+      console.log('✅ Odrzucone zamówienie zostało zarchiwizowane')
+    }
+  } catch (error) {
+    console.error('Error archiving rejected order:', error)
   }
 }
 

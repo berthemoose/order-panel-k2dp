@@ -7,7 +7,7 @@
       <div class="bg-white rounded-lg border p-6">
         <h2 class="text-xl font-semibold mb-4">Configuration</h2>
         <div class="space-y-2 font-mono text-sm">
-          <div><strong>CMS URL:</strong> {{ config.cmsUrl }}</div>
+          <div><strong>CMS URL:</strong> {{ cmsUrl }}</div>
           <div><strong>Full Login URL:</strong> {{ loginUrl }}</div>
         </div>
       </div>
@@ -118,11 +118,12 @@ import { ref, computed } from 'vue'
 import { useApi } from '../../composables/useApi'
 
 definePageMeta({
-  layout: 'default'
+  layout: 'default',
+  middleware: ['auth']
 })
 
-const { cmsUrl: config } = useApi()
-const loginUrl = computed(() => `${config}/users/login`)
+const { cmsUrl } = useApi()
+const loginUrl = computed(() => `${cmsUrl}/users/login`)
 
 const testEmail = ref('')
 const testPassword = ref('')
@@ -177,10 +178,10 @@ const testEndpoint = async () => {
 }
 
 const checkApiEndpoint = async () => {
-  window.open(config, '_blank')
+  window.open(cmsUrl, '_blank')
 }
 
 const checkAdminEndpoint = async () => {
-  window.open(config.replace('/api', '/admin'), '_blank')
+  window.open(cmsUrl.replace('/api', '/admin'), '_blank')
 }
 </script>

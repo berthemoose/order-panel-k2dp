@@ -2,6 +2,10 @@
 @import "@nuxt/ui";
 
 /* Global styles */
+* {
+  font-family: Arial, sans-serif !important;
+}
+
 button[class*="UButton"],
 .UButton,
 [data-ubutton] {

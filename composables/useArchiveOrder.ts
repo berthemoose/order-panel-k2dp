@@ -1,4 +1,5 @@
 import { useApi } from './useApi'
+import { useAuthenticatedFetch } from './useAuthenticatedFetch'
 
 interface ArchiveOrderResponse {
   success: boolean
@@ -8,6 +9,7 @@ interface ArchiveOrderResponse {
 
 export const useArchiveOrder = () => {
   const { orderUrl } = useApi()
+  const { authenticatedFetch } = useAuthenticatedFetch()
   const toast = useToast()
 
   const archiveOrder = async (orderId: string): Promise<ArchiveOrderResponse> => {
@@ -16,23 +18,30 @@ export const useArchiveOrder = () => {
     try {
       console.log('📦 [ARCHIVE ORDER] Order ID:', orderId)
       
-      const response = await $fetch<ArchiveOrderResponse>(`${orderUrl}/orders/${orderId}/archive`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      const response = await authenticatedFetch<any>(`${orderUrl}/archive-order/${orderId}`, {
+        method: 'POST'
       })
       
       console.log('✅ [ARCHIVE ORDER] Success:', response)
-      return response
-      
-    } catch (error: any) {
-      console.warn('⚠️ [ARCHIVE ORDER] Backend not available, using fallback:', error)
-      // Return success anyway so UI can update
+      toast.add({ 
+        title: "Zamówienie zarchiwizowane",
+        description: "Zamówienie zostało przeniesione do archiwum",
+        color: 'success'
+      })
       return {
         success: true,
-        message: 'Order archived (frontend only - backend not implemented yet)'
+        message: response.message || 'Order archived successfully',
+        data: response
       }
+      
+    } catch (error: any) {
+      console.error('❌ [ARCHIVE ORDER] Error:', error)
+      toast.add({ 
+        title: "Błąd",
+        description: "Nie udało się zarchiwizować zamówienia",
+        color: 'error'
+      })
+      throw error
     }
   }
 

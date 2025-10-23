@@ -1,8 +1,19 @@
 export default defineNuxtRouteMiddleware((to, from) => {
-  // Only run on client side
-  if (process.server) return
+  // Public routes that don't require authentication
+  const publicRoutes = ['/login', '/']
+  
+  // Check if current route is public
+  if (publicRoutes.includes(to.path)) {
+    return
+  }
 
-  // Check if user has auth token in localStorage
+  // On server-side, block all protected routes (SSR security)
+  if (process.server) {
+    console.warn('⚠️ [AUTH SSR] Blocking server-side access to protected route:', to.path)
+    return navigateTo('/login')
+  }
+
+  // Client-side auth check
   const token = localStorage.getItem('auth-token')
   const userStr = localStorage.getItem('auth-user')
   
@@ -14,12 +25,9 @@ export default defineNuxtRouteMiddleware((to, from) => {
     return navigateTo('/orders')
   }
 
-  // If trying to access protected routes
-  if (to.path !== '/login' && to.path !== '/' && to.path !== '/test-auth') {
-    // Check if authenticated
-    if (!isAuthenticated) {
-      console.warn('⚠️ [AUTH] Not authenticated, redirecting to login')
-      return navigateTo('/login')
-    }
+  // Protected routes require authentication
+  if (!isAuthenticated) {
+    console.warn('⚠️ [AUTH] Not authenticated, redirecting to login')
+    return navigateTo('/login')
   }
 })

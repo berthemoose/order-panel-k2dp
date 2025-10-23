@@ -1,15 +1,15 @@
-import type {Order, Orders} from "../types/order";
+import type {Orders} from "../types/order";
 import { useApi } from "./useApi";
 import { useAuthenticatedFetch } from "./useAuthenticatedFetch";
 
-export const useGetOrderList = () => {
+export const useGetCancelledOrderList = () => {
     const {orderUrl} = useApi();
     const { authenticatedUseFetch } = useAuthenticatedFetch();
     console.log(orderUrl);   
     
-    const {data,error} = authenticatedUseFetch<Orders>(`${orderUrl}/orders`,
+    const {data, error} = authenticatedUseFetch<Orders>(`${orderUrl}/cancelled-orders`,
         {
-            key: 'current-order-list-data',
+            key: 'cancelled-order-list-data',
             lazy: true,
             getCachedData() {
                 return undefined;

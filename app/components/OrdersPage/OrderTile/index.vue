@@ -316,13 +316,15 @@ const handleArchive = () => {
                         class="flex-1 cursor-pointer"
                         />
                     </div>
-                    <div class="">
+                    <div class="flex flex-col items-center justify-center">
+                        <p class="text-xs text-black">Wkrótce możliwość automatycznego powiadomienia Klienta o opóźnieniu przez SMS i/lub E-mail</p>
                         <UButton 
                             label="Powiadomienie o opóźnieniu" 
                             size="lg" 
+                            disabled
                             icon="i-heroicons-exclamation-triangle" 
                             color="warning" 
-                            variant="solid" 
+                            variant="ghost" 
                             @click.stop="handleNotifyDelay"
                             class="cursor-pointer" 
                         />
@@ -331,6 +333,20 @@ const handleArchive = () => {
                 
                 <!-- Completed Order Buttons -->
                 <template v-else-if="sectionType === 'completed'">
+                    <div class="">
+                        <UButton
+                        color="neutral"
+                        size="lg"
+                        icon="i-heroicons-archive-box"
+                        label="Archiwizuj"
+                        @click.stop="handleArchive"
+                        class="cursor-pointer"
+                        />
+                    </div>
+                </template>
+                
+                <!-- Rejected Order Buttons -->
+                <template v-else-if="sectionType === 'rejected'">
                     <div class="">
                         <UButton
                         color="neutral"
