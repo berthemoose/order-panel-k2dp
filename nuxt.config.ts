@@ -7,11 +7,9 @@ export default defineNuxtConfig({
   runtimeConfig: {
     cmsUrl: process.env.CMS_URL,
     orderUrl: process.env.ORDER_URL,
-    siteKey: process.env.RECAPTCHA_SITE_KEY,
     public: {
       cmsUrl: process.env.CMS_URL,
       orderUrl: process.env.ORDER_URL,
-      siteKey: process.env.RECAPTCHA_SITE_KEY,
     }
   },
   vite: {
