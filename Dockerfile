@@ -9,6 +9,15 @@ RUN npm ci
 
 # Build stage
 FROM base AS build
+
+# Accept build arguments
+ARG CMS_URL
+ARG ORDER_URL
+
+# Set as environment variables for the build
+ENV CMS_URL=${CMS_URL}
+ENV ORDER_URL=${ORDER_URL}
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
