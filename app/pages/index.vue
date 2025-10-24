@@ -5,7 +5,9 @@
       <h1 class="text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl mb-4">
         Panel Zarządzania Zamówieniami
       </h1>
-
+      <p>TESTS</p>
+      <p>{{ cmsUrl }}</p>
+      <p>{{ orderUrl }}</p>
     </div>
 
     <!-- Auth Status Section -->
@@ -99,8 +101,11 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useAuth } from '../../composables/useAuth'
+import { useApi } from '../../composables/useApi'
 
 const { user, isAuthenticated, initAuth } = useAuth()
+
+const {cmsUrl,orderUrl} = useApi()
 
 // Initialize auth state on mount
 onMounted(() => {

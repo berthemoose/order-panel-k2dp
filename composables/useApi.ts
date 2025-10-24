@@ -9,12 +9,11 @@ export const useApi = (): UseApiReturn => {
   const config = useRuntimeConfig();
   
 
-  
   /* CMS URL */
-  const cmsUrl = `${config.public.cmsUrl}/api`;
+  const cmsUrl = `${config.cmsUrl}/api`;
 
   /* Order service URL */
-  const orderUrl = `${config.public.orderUrl}`;
+  const orderUrl = `${config.orderUrl}`;
 
   return {
     cmsUrl,
