@@ -8,6 +8,10 @@
       <p>TESTS</p>
       <p>{{ cmsUrl }}</p>
       <p>{{ orderUrl }}</p>
+
+      <p>{{ testCms }}</p>
+      <p>{{ testOrder }}</p>
+      <p>{{ testEnv }}</p>
     </div>
 
     <!-- Auth Status Section -->
@@ -102,10 +106,14 @@
 import { onMounted } from 'vue'
 import { useAuth } from '../../composables/useAuth'
 import { useApi } from '../../composables/useApi'
+import test from 'node:test'
 
 const { user, isAuthenticated, initAuth } = useAuth()
 
 const {cmsUrl,orderUrl} = useApi()
+const testCms = process.env.CMS_URL
+const testOrder = process.env.ORDER_URL
+const testEnv = process.env.NODE_ENV
 
 // Initialize auth state on mount
 onMounted(() => {
