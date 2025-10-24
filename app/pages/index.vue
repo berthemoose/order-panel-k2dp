@@ -5,14 +5,10 @@
       <h1 class="text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl mb-4">
         Panel Zarządzania Zamówieniami
       </h1>
-      <p>TESTS</p>
+    
       <p>{{ cmsUrl }}</p>
       <p>{{ orderUrl }}</p>
-
-      <p>{{ testCms }}</p>
-      <p>{{ testOrder }}</p>
-      <p>{{ testEnv }}</p>
-    </div>
+       </div>
 
     <!-- Auth Status Section -->
     <div v-if="!isAuthenticated" class="mb-12">
@@ -111,9 +107,6 @@ import test from 'node:test'
 const { user, isAuthenticated, initAuth } = useAuth()
 
 const {cmsUrl,orderUrl} = useApi()
-const testCms = process.env.CMS_URL
-const testOrder = process.env.ORDER_URL
-const testEnv = process.env.NODE_ENV
 
 // Initialize auth state on mount
 onMounted(() => {
