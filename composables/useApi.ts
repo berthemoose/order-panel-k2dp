@@ -10,10 +10,10 @@ export const useApi = (): UseApiReturn => {
   
 
   /* CMS URL */
-  const cmsUrl = `${config.cmsUrl}/api`;
+  const cmsUrl = `${config.public.cmsUrl}/api`;
 
   /* Order service URL */
-  const orderUrl = `${config.orderUrl}`;
+  const orderUrl = `${config.public.orderUrl}`;
 
   return {
     cmsUrl,
