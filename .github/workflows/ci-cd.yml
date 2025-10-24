@@ -4,6 +4,11 @@ on:
   push:
     branches: 
       - stage
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   build-and-deploy:
@@ -12,6 +17,15 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+
+      - name: Verify Repository Structure
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Listing files:"
+          ls -la
+          echo "Checking for Dockerfile:"
+          test -f Dockerfile && echo "✓ Dockerfile found" || echo "✗ Dockerfile not found"
+          test -f package.json && echo "✓ package.json found" || echo "✗ package.json not found"
 
       - name: Log in to Azure
         uses: azure/login@v1
@@ -24,8 +38,10 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/order_panel:${{ github.sha }} .
+          docker build -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/order_panel:${{ github.sha }} -f Dockerfile .
+          docker tag ${{ secrets.REGISTRY_LOGIN_SERVER }}/order_panel:${{ github.sha }} ${{ secrets.REGISTRY_LOGIN_SERVER }}/order_panel:latest
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/order_panel:${{ github.sha }}
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/order_panel:latest
       
       - name: Deploy to Staging Slot
         uses: azure/webapps-deploy@v2
