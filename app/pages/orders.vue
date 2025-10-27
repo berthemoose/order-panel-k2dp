@@ -364,7 +364,7 @@ const closeAll = () => {
 // WebSocket functionality
 const connectWebSocket = () => {
   // Connect to WebSocket
-  ws.value = new WebSocket(`${config.public.wsUrl}`)
+  ws.value = new WebSocket(`wss://dp-api-stage-axbef4ducshphhbv.polandcentral-01.azurewebsites.net/ws/orders`)
   
   ws.value.onopen = () => {
     console.log('✅ Zainicjowałem połączenie z serwerem WebSocket - oczekuję na zamówienia')
