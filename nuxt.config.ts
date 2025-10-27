@@ -7,9 +7,11 @@ export default defineNuxtConfig({
   runtimeConfig: {
     cmsUrl: process.env.CMS_URL,
     orderUrl: process.env.ORDER_URL,
+    wsUrl:process.env.WS_URL,
     public: {
       cmsUrl: process.env.CMS_URL,
       orderUrl: process.env.ORDER_URL,
+      wsUrl:process.env.WS_URL,
     }
   },
   vite: {

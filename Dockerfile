@@ -17,6 +17,7 @@ ARG ORDER_URL
 # Set as environment variables for the build
 ENV CMS_URL=${CMS_URL}
 ENV ORDER_URL=${ORDER_URL}
+ENV WS_URL =${WS_URL}
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .

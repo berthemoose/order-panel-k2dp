@@ -131,7 +131,10 @@ import { useMarkReadyOrder } from '../../composables/useMarkReadyOrder'
 import { useNotifyDelayOrder } from '../../composables/useNotifyDelayOrder'
 import { useArchiveOrder } from '../../composables/useArchiveOrder'
 import { useArchiveRejectedOrder } from '../../composables/useArchiveRejectedOrder'
+import { useRuntimeConfig } from 'nuxt/app'
 import type { Order } from '../../types/order'
+
+const config = useRuntimeConfig();
 
 definePageMeta({
   middleware: ['auth']
@@ -361,7 +364,7 @@ const closeAll = () => {
 // WebSocket functionality
 const connectWebSocket = () => {
   // Connect to WebSocket
-  ws.value = new WebSocket('ws://localhost:8003/ws/orders')
+  ws.value = new WebSocket(`${config.public.wsUrl}`)
   
   ws.value.onopen = () => {
     console.log('✅ Zainicjowałem połączenie z serwerem WebSocket - oczekuję na zamówienia')
