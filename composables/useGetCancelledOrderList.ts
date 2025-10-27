@@ -7,7 +7,7 @@ export const useGetCancelledOrderList = () => {
     const { authenticatedUseFetch } = useAuthenticatedFetch();
     console.log(orderUrl);   
     
-    const {data, error} = authenticatedUseFetch<Orders>(`${orderUrl}/cancelled-orders`,
+    const {data, error} = authenticatedUseFetch<Orders>(`${orderUrl}/cancelled-orders/`,
         {
             key: 'cancelled-order-list-data',
             lazy: true,

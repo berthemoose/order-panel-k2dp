@@ -7,7 +7,7 @@ export const useGetPendingOrderList = () => {
     const { authenticatedUseFetch } = useAuthenticatedFetch();
     console.log(orderUrl);   
     
-    const {data,error} = authenticatedUseFetch<Orders>(`${orderUrl}/pending-orders`,
+    const {data,error} = authenticatedUseFetch<Orders>(`${orderUrl}/pending-orders/`,
         {
             key: 'pending-order-list-data',
             lazy: true,

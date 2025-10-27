@@ -7,7 +7,7 @@ export const useGetFinishedOrderList = () => {
     const { authenticatedUseFetch } = useAuthenticatedFetch();
     console.log(orderUrl);   
     
-    const {data,error} = authenticatedUseFetch<Orders>(`${orderUrl}/finished-orders`,
+    const {data,error} = authenticatedUseFetch<Orders>(`${orderUrl}/finished-orders/`,
         {
             key: 'finished-order-list-data',
             lazy: true,
