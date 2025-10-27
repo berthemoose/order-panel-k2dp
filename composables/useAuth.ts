@@ -46,9 +46,7 @@ export const useAuth = () => {
   const login = async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
       const loginUrl = `${cmsUrl}/users/login`
-      console.log('🔐 [LOGIN] Attempting login for:', credentials.email)
-      console.log('🔐 [LOGIN] URL:', loginUrl)
-      
+    
       const response = await $fetch<AuthResponse>(loginUrl, {
         method: 'POST',
         headers: {
