@@ -6,8 +6,7 @@
         Panel Zarządzania Zamówieniami
       </h1>
     
-      <p>{{ cmsUrl }}</p>
-      <p>{{ orderUrl }}</p>
+      <p>{{ wsUrl }}</p>
        </div>
 
     <!-- Auth Status Section -->
@@ -106,7 +105,7 @@ import test from 'node:test'
 
 const { user, isAuthenticated, initAuth } = useAuth()
 
-const {cmsUrl,orderUrl} = useApi()
+const {wsUrl ,orderUrl} = useApi()
 
 // Initialize auth state on mount
 onMounted(() => {
