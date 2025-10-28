@@ -1,9 +1,9 @@
 <template>
-<div class="p-6 bg-gray-50 min-h-screen">
+<div class="p-6 bg-gray-50 min-h-screen space-y-8">
     <!-- Header -->
     <div class="mb-6">
         <h1 class="text-4xl font-bold text-gray-900 mb-2">Archiwum zamówień</h1>
-        <p class="text-gray-600">Przeglądaj i wyszukuj zarchiwizowane zamówienia</p>
+        <p class="text-gray-600">Przeglądaj zarchiwizowane zamówienia</p>
     </div>
 
     <!-- Search and Filter Bar -->
@@ -215,7 +215,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { useGetArchivedOrderList } from '../../composables/useGetArchivedOrderList'
+import { useGetArchivedOrderList } from '../composables/useGetArchivedOrderList'
 
 definePageMeta({
   middleware: ['auth']

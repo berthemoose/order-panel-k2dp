@@ -1,5 +1,11 @@
 <template>
 <div class="p-6 bg-gray-50 min-h-screen space-y-8">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-4xl font-bold text-gray-900 mb-2">Obecne zamówienia</h1>
+        <p class="text-gray-600">Przeglądaj aktualne zamówienia</p>
+    </div>
+
     <!-- Loading state during auth verification -->
     <div v-if="isVerifyingAuth" class="flex items-center justify-center py-20">
         <div class="text-center">
@@ -121,16 +127,16 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import draggable from 'vuedraggable'
-import {useGetOrderList} from "../../composables/useGetOrderList"
-import {useGetPendingOrderList} from "../../composables/useGetPendingOrderList"
-import {useGetFinishedOrderList} from "../../composables/useGetFinishedOrderList"
-import {useGetCancelledOrderList} from "../../composables/useGetCancelledOrderList"
-import { useAcceptOrder } from '../../composables/useAcceptOrder'
-import { useDeclineOrder } from '../../composables/useDeclineOrder'
-import { useMarkReadyOrder } from '../../composables/useMarkReadyOrder'
-import { useNotifyDelayOrder } from '../../composables/useNotifyDelayOrder'
-import { useArchiveOrder } from '../../composables/useArchiveOrder'
-import { useArchiveRejectedOrder } from '../../composables/useArchiveRejectedOrder'
+import {useGetOrderList} from "../composables/useGetOrderList"
+import {useGetPendingOrderList} from "../composables/useGetPendingOrderList"
+import {useGetFinishedOrderList} from "../composables/useGetFinishedOrderList"
+import {useGetCancelledOrderList} from "../composables/useGetCancelledOrderList"
+import { useAcceptOrder } from '../composables/useAcceptOrder'
+import { useDeclineOrder } from '../composables/useDeclineOrder'
+import { useMarkReadyOrder } from '../composables/useMarkReadyOrder'
+import { useNotifyDelayOrder } from '../composables/useNotifyDelayOrder'
+import { useArchiveOrder } from '../composables/useArchiveOrder'
+import { useArchiveRejectedOrder } from '../composables/useArchiveRejectedOrder'
 import { useRuntimeConfig } from 'nuxt/app'
 import type { Order } from '../../types/order'
 

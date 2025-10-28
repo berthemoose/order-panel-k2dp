@@ -3,11 +3,12 @@
     <div class="max-w-md w-full space-y-8">
       <div>
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Logowanie do Order Panel
+          Logowanie do Panelu Zamówień
         </h2>
         <p class="mt-2 text-center text-sm text-gray-600">
-          Zaloguj się przy użyciu konta administratora
+          Użyj danych logowania do usługi K2-CMS.
         </p>
+        <p class="text-xs mt-2 text-center text-gray-600">Jeżeli nie masz dostępu do loginu lub hasła, skontaktuj się z administracją.</p>
       </div>
       
       <form class="mt-8 space-y-6" @submit.prevent="handleLogin">
@@ -57,10 +58,10 @@
           <UButton
             type="submit"
             :disabled="isLoading"
-            color="primary"
+            color="none"
             size="lg"
             block
-            class="w-full"
+            class="w-full UButton block px-3 py-2 rounded-md text-base font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors text-center"
           >
             <span v-if="isLoading">Logowanie...</span>
             <span v-else>Zaloguj się</span>
@@ -73,7 +74,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useAuth } from '../../composables/useAuth'
+import { useAuth } from '../composables/useAuth'
 
 definePageMeta({
   layout: false

@@ -1,13 +1,11 @@
 <template>
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+  <div class="p-6 bg-gray-50 min-h-screen space-y-8">
     <!-- Hero Section -->
     <div class="text-center mb-12">
       <h1 class="text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl mb-4">
         Panel Zarządzania Zamówieniami
       </h1>
-    
-      <p>{{ wsUrl }}</p>
-       </div>
+    </div>
 
     <!-- Auth Status Section -->
     <div v-if="!isAuthenticated" class="mb-12">
@@ -79,6 +77,17 @@
         </div>
       </div>
 
+      <div class="w-full flex justify-center">
+        <UCard class="w-1/2 p-4 m-6">
+          <h3 class="text-xl">Uwagi dotyczące wersji</h3>
+          <ul class="list-disc ps-6 my-5 marker:text-(--ui-border-accented)">
+            <li class="my-1.5 ps-1.5 leading-7 [&>ul]:my-0">W obecnej wersji, ze względu na szczególne wymogi bezpieczeństwa we wczesnym stadium rozwoju, każde odświeżenie strony wiąże się z wylogowaniem. Nawigacja pomiędzy zakładkami może odbywać się bez konieczności przeładowania.</li>
+            <li class="my-1.5 ps-1.5 leading-7 [&>ul]:my-0">System może na razie działać jednocześnie na sześciu komputerach. Na każdym komputerze należy zalogować się oddzielnym kontem. </li>
+            <li class="my-1.5 ps-1.5 leading-7 [&>ul]:my-0 underline">Proszę o zgłaszanie wszelkich problemów z Panelem na adres <a href="mailto:bartosz.janp@gmail.com">bartosz.janp@gmail.com</a>.</li>
+          </ul>
+        </UCard>
+      </div>
+
       <!-- CTA Section for authenticated users -->
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
         <h2 class="text-2xl font-bold text-gray-900 mb-4">Hej, witaj w Panelu Zamówień K2</h2>
@@ -99,13 +108,9 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useAuth } from '../../composables/useAuth'
-import { useApi } from '../../composables/useApi'
-import test from 'node:test'
+import { useAuth } from '../composables/useAuth'
 
 const { user, isAuthenticated, initAuth } = useAuth()
-
-const {wsUrl ,orderUrl} = useApi()
 
 // Initialize auth state on mount
 onMounted(() => {

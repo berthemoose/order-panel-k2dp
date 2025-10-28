@@ -1,10 +1,13 @@
 <template>
   <header class="bg-white shadow-sm border-b border-gray-200">
     <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="flex h-16 justify-between items-center">
+      <div class="flex h-20 justify-between items-center">
         <div class="flex items-center">
-          <NuxtLink to="/" class="text-2xl font-bold text-black hover:text-slate-700 transition-colors">
-            PANEL ZAMÓWIEŃ K2
+          <NuxtLink to="/" class="text-2xl font-bold text-black hover:text-slate-700 transition-colors flex justify-center items-center">
+            <div class="px-4">
+              <NuxtImg width="80" src="/img/icon.webp"/>
+            </div>
+            PANEL ZAMÓWIEŃ
           </NuxtLink>
         </div>
         
@@ -111,7 +114,7 @@
           </NuxtLink>
           
           <!-- Archive link - only when authenticated -->
-          <NuxtLink 
+          <UButton 
             v-if="isAuthenticated"
             to="/archive" 
             class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 transition-colors"
@@ -119,17 +122,18 @@
             @click="mobileMenuOpen = false"
           >
             Archiwum
-          </NuxtLink>
+          </UButton>
           
           <!-- Show Login button when not authenticated -->
-          <NuxtLink 
+          <UButton 
             v-if="!isAuthenticated"
+            size="lg"
             to="/login" 
             class="block px-3 py-2 rounded-md text-base font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors text-center"
             @click="mobileMenuOpen = false"
           >
             Zaloguj się
-          </NuxtLink>
+        </UButton>
           
           <!-- User info and logout for mobile - only when authenticated -->
           <div v-if="isAuthenticated" class="border-t border-gray-200 pt-4 mt-4">
@@ -158,7 +162,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuth } from '../../composables/useAuth'
+import { useAuth } from '../composables/useAuth'
 
 const mobileMenuOpen = ref(false)
 const router = useRouter()
