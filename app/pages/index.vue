@@ -61,7 +61,7 @@
             </div>
           </div>
         </div>
-
+           
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div class="flex items-center justify-between">
             <div>
@@ -81,8 +81,8 @@
         <UCard class="w-1/2 p-4 m-6">
           <h3 class="text-xl">Uwagi dotyczące wersji</h3>
           <ul class="list-disc ps-6 my-5 marker:text-(--ui-border-accented)">
-            <li class="my-1.5 ps-1.5 leading-7 [&>ul]:my-0">W obecnej wersji, ze względu na szczególne wymogi bezpieczeństwa we wczesnym stadium rozwoju, każde odświeżenie strony wiąże się z wylogowaniem. Nawigacja pomiędzy zakładkami może odbywać się bez konieczności przeładowania.</li>
-            <li class="my-1.5 ps-1.5 leading-7 [&>ul]:my-0">System może na razie działać jednocześnie na sześciu komputerach. Na każdym komputerze należy zalogować się oddzielnym kontem. </li>
+            <li class="my-1.5 ps-1.5 leading-7 [&>ul]:my-0">W obecnej wersji, ze względu na szczególne wymogi bezpieczeństwa, każde odświeżenie strony wiąże się z wylogowaniem. Nawigacja pomiędzy zakładkami może odbywać się bez konieczności przeładowania.</li>
+            <li class="my-1.5 ps-1.5 leading-7 [&>ul]:my-0">System może na razie działać jednocześnie na sześciu komputerach. By uniknąć konfliktów, na każdym komputerze należy zalogować do innego konta. </li>
             <li class="my-1.5 ps-1.5 leading-7 [&>ul]:my-0 underline">Proszę o zgłaszanie wszelkich problemów z Panelem na adres <a href="mailto:bartosz.janp@gmail.com">bartosz.janp@gmail.com</a>.</li>
           </ul>
         </UCard>

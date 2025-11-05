@@ -107,7 +107,7 @@ const handleArchive = () => {
                     </span>
                     
                     <span 
-                        v-if="order.isStudent" 
+                        v-if="order.is_student" 
                         class="px-2 py-1 text-xs font-semibold bg-red-200 text-black rounded text-center flex items-center justify-center gap-2"
                     >
                         <UIcon class="text-xl" name="picon:student"/>

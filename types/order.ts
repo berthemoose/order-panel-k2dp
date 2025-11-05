@@ -11,7 +11,7 @@ export interface Order {
     upload_status: string;
     order_status: string;
     submitted_at: string;
-    isStudent: boolean;
+    is_student: boolean;
     id: string;
     file_url: string;
     isRejected?: boolean;
