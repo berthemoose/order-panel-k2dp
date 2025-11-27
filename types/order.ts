@@ -1,32 +1,62 @@
-export interface Order {
-    _id: string;
-    name: string;
-    surname: string;
-    email: string;
-    phone: string;
-    company: string;
-    comments: string;
-    copies: number;
-    specs: Array<{[key:string]: string}>;
-    upload_status: string;
-    order_status: string;
-    submitted_at: string;
-    is_student: boolean;
-    id: string;
-    file_url: string;
-    isRejected?: boolean;
-    product_name?: string;
+/* TODO:
+ * check if the typing of this is aligned throughout the entire pipeline
+ */
+
+export interface OrderItem {
+  id: string;
+  cart_item_id: string;
+  product_name: string;
+  price: number;
+  base_price: number;
+  values: { [key: string]: string | number | boolean };
+  file_url: string;
+  upload_status?: string; 
+}
+
+export interface CustomerInfo {
+  name: string;
+  surname: string;
+  email: string;
+  phone: string;
+  company: string;
+}
+
+export interface DeliveryAddress {
+  street: string;
+  number: string;
+  code: string;
+  city: string;
+}
+
+export interface DeliveryOption {
+  name: string;
+  description: string;
+  price: number;
+  time?: string;
+  id: string;
+}
+
+export interface OrderData {
+  items: OrderItem[];
+  customer_info: CustomerInfo;
+  delivery_address?: DeliveryAddress;
+  delivery_option?: DeliveryOption;
+  delivery_method: "delivery" | "pickup";
+  total: number;
+  submitted_at: string;
+  _id: string;
+  // todo - change to literal
 }
 
 export interface Orders {
-    status: string;
-    data: {
-        orders: Array<Order>;
-    };
-    pagination: {
-        total: number;
-        limit: number;
-        skip: number;
-        returned: number;
-    }
+  status: string;
+  data: {
+    orders: OrderData[];
+  };
+  pagination: {
+    total: number;
+    limit: number;
+    skip: number;
+    returned: number;
+  };
 }

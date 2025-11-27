@@ -12,18 +12,19 @@ export const useDeclineOrder = () => {
   const { authenticatedFetch } = useAuthenticatedFetch()
   const toast = useToast()
 
-  const declineOrder = async (orderId: string, comment: string): Promise<DeclineOrderResponse> => {
+  const declineOrder = async (orderId: string): Promise<DeclineOrderResponse> => {
     toast.add({ title: "Activating 'Decline Order'" })
     
     try {
       console.log('🔴 [DECLINE ORDER] Order ID:', orderId)
-      console.log('🔴 [DECLINE ORDER] Comment:', comment)
+      // console.log('🔴 [DECLINE ORDER] Comment:', comment)
       
       const response = await authenticatedFetch<any>(`${orderUrl}/decline-order/${orderId}`, {
         method: 'POST',
         body: {
-          comment
+          
         }
+        /* Add comment later */
       })
       
       console.log('✅ [DECLINE ORDER] Success:', response)
