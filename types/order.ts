@@ -45,7 +45,14 @@ export interface OrderData {
   total: number;
   submitted_at: string;
   _id: string;
-  // todo - change to literal
+  payment_intent_id: string;
+  
+  payment_status: string;
+  payment: any; // big stripe payment object TODO; type it
+  status: string; //status of the whole order - probably redundant
+  
+
+  
 }
 
 export interface Orders {

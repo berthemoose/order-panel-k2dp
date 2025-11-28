@@ -9,8 +9,6 @@ const props = defineProps<{
   sectionType?: "pending" | "in-progress" | "completed" | "rejected";
 }>();
 
-
-
 const emit = defineEmits<{
   toggleExpand: [orderId: string];
   acceptOrder: [orderId: string];
@@ -71,7 +69,6 @@ const handleAccept = () => {
   emit("acceptOrder", props.order._id);
 };
 
-
 const handleMarkReady = () => {
   emit("markReady", props.order._id);
 };
@@ -88,7 +85,6 @@ const handleArchive = () => {
 </script>
 
 <template>
-
   <div
     @click="handleToggle()"
     class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
@@ -152,64 +148,108 @@ const handleArchive = () => {
 
           <!-- Price, status, etc. -->
           <div class="">
-            <div class="w-full flex flex-col justify-end my-4">
-              <div
-                class="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium"
-                :class="{
-                  'bg-green-100 text-green-700': 0,
-                  'bg-yellow-100 text-yellow-700': 1,
-                  'bg-red-100 text-red-700': 0,
-                }"
-              >
-                <span
-                  class="w-2 h-2 rounded-full"
+            <UPopover mode="hover">
+              <div class="w-full flex flex-col justify-end my-4">
+                <div
+                  class="flex items-center gap-2 px-3 py-1 hover:ring rounded-full text-xs font-medium"
                   :class="{
-                    'bg-green-500': 0,
-                    'bg-yellow-500 animate-pulse': 1,
-                    'bg-red-500': 0,
+                    'bg-green-100 text-green-700':
+                      order.payment_status === 'succeeded',
+                    'bg-yellow-100 text-yellow-700':
+                      order.payment_status != 'succeeded' &&
+                      order.payment_status != 'failed',
+                    'bg-red-100 text-red-700':
+                      order.payment_status === 'failed',
                   }"
-                ></span>
-                <span>Oczekiwanie na płatność</span>
+                >
+                  <span
+                    class="w-2 h-2 rounded-full"
+                    :class="{
+                      hidden: order.payment_status === 'succeeded',
+                      'bg-yellow-500 animate-pulse':
+                        order.payment_status != 'succeeded' &&
+                        order.payment_status != 'failed',
+                      'bg-red-500': order.payment_status === 'failed',
+                    }"
+                  ></span>
+                  <span>{{
+                    order.payment_status === "succeeded"
+                      ? "Płatność zakończona sukcesem"
+                      : order.payment_status === "failed"
+                      ? "Płatność nieudana"
+                      : "Oczekiwanie na płatność"
+                  }}</span>
 
-                <!-- TODO: change the gross val -->
-                <!-- TODO: add a popover when hovered that makes a call to check the stripe payment intent -->
-                <div class="flex flex-col items-center text-center p-2">
-                  <h3 class="font-bold text-2xl">
-                    {{
-                      order.total.toLocaleString("pl-PL", {
-                        style: "currency",
-                        currency: "PLN",
-                      })
-                    }}
-                  </h3>
-                  <p class="text-xs">
-                    Cena brutto
-                    {{
-                      order.total.toLocaleString("pl-PL", {
-                        style: "currency",
-                        currency: "PLN",
-                      })
-                    }}
-                  </p>
+                  <!-- TODO: change the gross val -->
+                  <!-- TODO: add a popover when hovered that makes a call to check the stripe payment intent -->
+                  <div class="flex flex-col items-center text-center p-2">
+                    <h3 class="font-bold text-2xl">
+                      {{
+                        order.total.toLocaleString("pl-PL", {
+                          style: "currency",
+                          currency: "PLN",
+                        })
+                      }}
+                    </h3>
+                    <p class="text-xs">
+                      Cena brutto
+                      {{
+                        order.total.toLocaleString("pl-PL", {
+                          style: "currency",
+                          currency: "PLN",
+                        })
+                      }}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+
+              <template #content>
+                <div class="p-8 bg-white text-black rounded-xl">
+                  <div class="flex items-center justify-center flex-col">
+                    <span class="flex items-center gap-2">
+                      Status płatności
+                      <UIcon class="text-4xl" name="fa7-brands:stripe" />
+                    </span>
+
+                    {{ order.payment_status }}
+                    <p
+                      class=""
+                      v-for="(value, key) in order.payment.payment_data"
+                    >
+                      {{ key }} : {{ value }}
+                    </p>
+
+                    <UContainer>
+                      <p class="text-xs text-center">
+                        Kliknij aby przejść do panelu płatności (wymagane
+                        logowanie)
+                      </p>
+                      <div class="px-4 flex gap-12 w-full">
+                        <p>ID płatności:</p>
+                        <p>{{ order.payment_intent_id }}</p>
+                      </div>
+                    </UContainer>
+                  </div>
+                </div>
+              </template>
+            </UPopover>
 
             <div class="flex flex-col gap-[2px]">
               <span
-                class="px-2 py-1 text-xs font-semibold bg-red-200 text-black rounded text-center flex items-center justify-center gap-2"
+                class="hover:ring px-2 py-1 text-xs font-semibold bg-red-200 text-black rounded text-center flex items-center justify-center gap-2"
               >
                 <UIcon class="text-xl" name="picon:student" />
                 STUDENT
               </span>
               <span
-                class="px-2 py-1 text-xs font-semibold bg-red-200 text-black rounded text-center flex items-center justify-center gap-2"
+                class="hover:ring px-2 py-1 text-xs font-semibold bg-red-200 text-black rounded text-center flex items-center justify-center gap-2"
               >
                 <UIcon class="text-xl" name="picon:student" />
                 FIRMA
               </span>
               <span
-                class="px-3 py-1 text-xs font-bold bg-red-600 text-white rounded text-center flex items-center justify-center gap-2"
+                class="hover:ring ring-black px-2 py-1 text-xs font-bold bg-red-600 text-white rounded text-center flex items-center justify-center gap-2"
               >
                 <UIcon class="text-xl" name="ic:round-cancel" />
                 ZAMÓWIENIE ODRZUCONE
@@ -226,11 +266,12 @@ const handleArchive = () => {
                 <div class="">
                   <UButton
                     color="success"
+                    :disabled="order.payment_status!='succeeded'"
                     size="lg"
                     icon="i-heroicons-check-circle"
                     label="Wyślij do realizacji"
                     @click.stop="handleAccept"
-                    class="flex-1 cursor-pointer"
+                    class="flex-1 cursor-pointer hover:ring"
                   />
                 </div>
                 <div class="">
@@ -241,7 +282,7 @@ const handleArchive = () => {
                     color="error"
                     variant="solid"
                     @click.stop="handleDecline"
-                    class="cursor-pointer"
+                    class="cursor-pointer hover:ring"
                   />
                 </div>
               </div>
@@ -287,7 +328,7 @@ const handleArchive = () => {
               </div>
 
               <!-- Rejected buttons -->
-               <div v-else-if="sectionType === 'rejected'">
+              <div v-else-if="sectionType === 'rejected'">
                 <div class="">
                   <UButton
                     color="info"
@@ -300,7 +341,6 @@ const handleArchive = () => {
                   />
                 </div>
               </div>
-
             </div>
           </div>
         </div>
@@ -359,8 +399,6 @@ const handleArchive = () => {
                 Specyfikacja
               </p>
               <!-- Spec values -->
-              
-              
 
               <div v-for="(value, key) in item.values">
                 {{ key }} : {{ value }}
@@ -390,21 +428,6 @@ const handleArchive = () => {
         <!-- Order ID -->
 
         <!-- Action Buttons -->
-        <div
-          class="flex w-full items-center justify-around pt-4 px-36 border-t border-gray-200"
-        >
-          <!-- Pending Order Buttons -->
-          <!-- 
- -->
-          <!-- In-Progress Order Buttons -->
-          <!-- 
- -->
-          <!-- Completed Order Buttons -->
-          <!-- 
- -->
-          <!-- Rejected Order Buttons -->
-          <!--  -->
-        </div>
       </div>
     </div>
   </div>

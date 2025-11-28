@@ -4,7 +4,10 @@
     <p>Is live orders initialized: {{ isLiveOrdersInitialized }}</p>
     <p>Is data initialized: {{ isDataInitialized }}</p>
 
-    
+
+
+    <p v-for="(order,key) in liveOrders">{{order}} {{ typeof order }}</p>
+
 
     <!-- Testing sections -->
     <div v-for="section in sectionOrderWithData">
@@ -114,50 +117,82 @@ const connectWebSocket = () => {
       const message = JSON.parse(event.data);
       console.log("Parsed WebSocket message", message);
 
-      // Handle new order from WebSocket
-      if (message.type === "new_order") {
-        const orderData: OrderData = JSON.parse(message.data);
+      switch (message.type) {
+        case "new_order":
+          try {
+            const orderData: OrderData = JSON.parse(message.data); 
+            console.log("Order data type:", typeof orderData, orderData);
+            // Check if order already exists (deduplication)
+            const exists = liveOrders.value.some((o) => o._id === orderData._id);
+            if (!exists) {
+              // Add new order to the top of the list
+              liveOrders.value = [orderData, ...liveOrders.value];
+              console.log("Dodano nowe zamówienie:", orderData._id);
+              // TODO: Show toast notification for new order
+            }
+          } catch (error) {
+            console.error("Error processing new_order:", error, message);
+          }
+          break;
 
-        console.log("Order data type:", typeof orderData, orderData);
+        case "order_updated":
+          try {
+            console.log("Aktualizacja zamówienia", message.data);
+            const updateData = message.data;
+            console.log("update data", updateData);
+      
+            // Find and update the specific order
+            const orderIndex = liveOrders.value.findIndex(
+              (o) => o._id === updateData._id
+            );
+      
+            if (orderIndex !== -1) {
+              // Update the order with new data (merge updates)
+              liveOrders.value[orderIndex] = {
+                ...liveOrders.value[orderIndex],
+                ...(updateData.updates || updateData),
+              };
+              
+              // Update specific cart items if needed
+              if (updateData.cart_item_id) {
+                liveOrders.value[orderIndex].items?.forEach((item) => {
+                  if (item.cart_item_id === updateData.cart_item_id) {
+                    if (updateData.updates?.file_url) item.file_url = updateData.updates.file_url;
+                    if (updateData.updates?.upload_status) item.upload_status = updateData.updates.upload_status;
+                  }
+                });
+              }
+              
+              console.log("✅ Zaktualizowano zamówienie:", updateData._id);
+            }
+          } catch (error) {
+            console.error("Error processing order_updated:", error, message);
+          }
+          break;
 
-        // Check if order already exists (deduplication)
-        const exists = liveOrders.value.some((o) => o._id === orderData._id);
-        if (!exists) {
-          // Add new order to the top of the list
-          liveOrders.value = [orderData, ...liveOrders.value];
-          console.log("Dodano nowe zamówienie:", orderData._id);
-          // TODO: Show toast notification for new order
-        }
-      } else if (message.type === "order_updated") {
-        console.log("Aktualizacja zamówienia", message.data);
+        case "payment_succeeded":
+          try {
+            console.log("MAMY UPDATE PAYMENTU, SUKCES!", message.data);
+            const { _id: orderId, updates } = message.data;
+            const orderIndex = liveOrders.value.findIndex(o => o._id === orderId);
+            
+            if (orderIndex !== -1) {
+              liveOrders.value[orderIndex] = {
+                ...liveOrders.value[orderIndex],
+                payment_status: 'succeeded',
+                status: 'confirmed',
+                ...updates
+              };
+              console.log("✅ Zaktualizowano status płatności dla zamówienia:", orderId);
+            }
+          } catch (error) {
+            console.error("Error processing payment_succeeded:", error, message);
+          }
+          break;
 
-        // Ensure data is a proper object
-        const updateData = message.data;
-        console.log("update data", updateData);
-
-        // Find and update the specific order
-        const orderIndex = liveOrders.value.findIndex(
-          (o) => o._id === updateData._id
-        );
-
-        liveOrders.value.forEach((order) => {
-          const cartIndex = order.items.findIndex(
-            (o) => o.cart_item_id === updateData.cart_item_id
-          );
-          order.items[cartIndex].file_url = updateData.updates.file_url;
-          order.items[cartIndex].upload_status=updateData.updates.upload_status
-        });
-
-        console.log("TEST INDEX", orderIndex);
-
-        if (orderIndex !== -1) {
-          // Update the order with new data (merge updates)
-          liveOrders.value[orderIndex] = {
-            ...liveOrders.value[orderIndex],
-            ...(updateData.updates || updateData), // Handle both formats: {updates: {...}} or direct update object
-          };
-          console.log("✅ Zaktualizowano zamówienie:", updateData._id);
-        }
+        default:
+          console.warn("Unknown message type:", message.type);
+          break;
       }
     } catch (error) {
       console.error("Błąd przy przetwarzaniu wiadomości WebSocket:", error);
@@ -537,7 +572,7 @@ watch(
   { immediate: true }
 );
 
-/* 
+/*
 DEBUG LOGS:
 will only log if the server is localhost
 */
