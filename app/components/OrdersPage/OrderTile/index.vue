@@ -148,92 +148,7 @@ const handleArchive = () => {
 
           <!-- Price, status, etc. -->
           <div class="">
-            <UPopover mode="hover">
-              <div class="w-full flex flex-col justify-end my-4">
-                <div
-                  class="flex items-center gap-2 px-3 py-1 hover:ring rounded-full text-xs font-medium"
-                  :class="{
-                    'bg-green-100 text-green-700':
-                      order.payment_status === 'succeeded',
-                    'bg-yellow-100 text-yellow-700':
-                      order.payment_status != 'succeeded' &&
-                      order.payment_status != 'failed',
-                    'bg-red-100 text-red-700':
-                      order.payment_status === 'failed',
-                  }"
-                >
-                  <span
-                    class="w-2 h-2 rounded-full"
-                    :class="{
-                      hidden: order.payment_status === 'succeeded',
-                      'bg-yellow-500 animate-pulse':
-                        order.payment_status != 'succeeded' &&
-                        order.payment_status != 'failed',
-                      'bg-red-500': order.payment_status === 'failed',
-                    }"
-                  ></span>
-                  <span>{{
-                    order.payment_status === "succeeded"
-                      ? "Płatność zakończona sukcesem"
-                      : order.payment_status === "failed"
-                      ? "Płatność nieudana"
-                      : "Oczekiwanie na płatność"
-                  }}</span>
-
-                  <!-- TODO: change the gross val -->
-                  <!-- TODO: add a popover when hovered that makes a call to check the stripe payment intent -->
-                  <div class="flex flex-col items-center text-center p-2">
-                    <h3 class="font-bold text-2xl">
-                      {{
-                        order.total.toLocaleString("pl-PL", {
-                          style: "currency",
-                          currency: "PLN",
-                        })
-                      }}
-                    </h3>
-                    <p class="text-xs">
-                      Cena brutto
-                      {{
-                        order.total.toLocaleString("pl-PL", {
-                          style: "currency",
-                          currency: "PLN",
-                        })
-                      }}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <template #content>
-                <div class="p-8 bg-white text-black rounded-xl">
-                  <div class="flex items-center justify-center flex-col">
-                    <span class="flex items-center gap-2">
-                      Status płatności
-                      <UIcon class="text-4xl" name="fa7-brands:stripe" />
-                    </span>
-
-                    {{ order.payment_status }}
-                    <p
-                      class=""
-                      v-for="(value, key) in order.payment.payment_data"
-                    >
-                      {{ key }} : {{ value }}
-                    </p>
-
-                    <UContainer>
-                      <p class="text-xs text-center">
-                        Kliknij aby przejść do panelu płatności (wymagane
-                        logowanie)
-                      </p>
-                      <div class="px-4 flex gap-12 w-full">
-                        <p>ID płatności:</p>
-                        <p>{{ order.payment_intent_id }}</p>
-                      </div>
-                    </UContainer>
-                  </div>
-                </div>
-              </template>
-            </UPopover>
+            <OrdersPageOrderTilePrice :order="order" /> 
 
             <div class="flex flex-col gap-[2px]">
               <span
@@ -266,7 +181,7 @@ const handleArchive = () => {
                 <div class="">
                   <UButton
                     color="success"
-                    :disabled="order.payment_status!='succeeded'"
+                    :disabled="order.payment_status != 'succeeded'"
                     size="lg"
                     icon="i-heroicons-check-circle"
                     label="Wyślij do realizacji"

@@ -10,7 +10,7 @@ export interface OrderItem {
   base_price: number;
   values: { [key: string]: string | number | boolean };
   file_url: string;
-  upload_status?: string; 
+  upload_status?: string;
 }
 
 export interface CustomerInfo {
@@ -37,6 +37,7 @@ export interface DeliveryOption {
 }
 
 export interface OrderData {
+  _id: string;
   items: OrderItem[];
   customer_info: CustomerInfo;
   delivery_address?: DeliveryAddress;
@@ -44,15 +45,19 @@ export interface OrderData {
   delivery_method: "delivery" | "pickup";
   total: number;
   submitted_at: string;
-  _id: string;
+  is_student: boolean;
   payment_intent_id: string;
-  
-  payment_status: string;
-  payment: any; // big stripe payment object TODO; type it
-  status: string; //status of the whole order - probably redundant
-  
-
-  
+  payment_status:
+    | "pending"
+    | "processing"
+    | "succeeded"
+    | "failed"
+    | "canceled"
+    | "requires_action"
+    | "requires_payment_method"
+    | "refunded";
+  payment: any; // big stripe payment object
+  upload_status: "pending" | "uploaded" | "failed";
 }
 
 export interface Orders {

@@ -4,10 +4,7 @@
     <p>Is live orders initialized: {{ isLiveOrdersInitialized }}</p>
     <p>Is data initialized: {{ isDataInitialized }}</p>
 
-
-
-    <p v-for="(order,key) in liveOrders">{{order}} {{ typeof order }}</p>
-
+    <p v-for="(order, key) in liveOrders">{{ order }} {{ typeof order }}</p>
 
     <!-- Testing sections -->
     <div v-for="section in sectionOrderWithData">
@@ -78,13 +75,14 @@ import { useMarkReadyOrder } from "../composables/useMarkReadyOrder";
 import { useNotifyDelayOrder } from "../composables/useNotifyDelayOrder";
 import { useArchiveOrder } from "../composables/useArchiveOrder";
 import { useArchiveRejectedOrder } from "../composables/useArchiveRejectedOrder";
-import { useRuntimeConfig } from "nuxt/app";
+import { useNuxtApp, useRuntimeConfig } from "nuxt/app";
 import { useServerApis } from "../composables/useServerApis";
 
 import type { OrderData } from "../../types/order";
 import type { Section } from "../../types/section";
 
 const config = useRuntimeConfig();
+const toast = useToast();
 
 const { acceptOrder } = useAcceptOrder();
 const { declineOrder } = useDeclineOrder();
@@ -111,19 +109,30 @@ const connectWebSocket = () => {
     wsStatus.value = "connected";
   };
 
-  // WebSocket handle new order
+  // This endpoint handles the webhooks Stripe sends after the order is processed.
+  // Available states:
+  //       * payment_succeeded - payment_intent.succeeded
+  //       * payment_failed - payment_intent.failed
+  //       * payment_canceled - payment_intent.canceled
+  //       * processing - payment_intent.processing
+  //       * requires_action - payment_intent.requires_action
+  //       * requires_payment_method - payment_intent.requires_payment_method
+
   ws.value.onmessage = (event) => {
     try {
       const message = JSON.parse(event.data);
       console.log("Parsed WebSocket message", message);
-
+      // Manage the status handlers
       switch (message.type) {
         case "new_order":
+          toast.add({ title: "New order just arrived!" });
           try {
-            const orderData: OrderData = JSON.parse(message.data); 
+            const orderData: OrderData = JSON.parse(message.data);
             console.log("Order data type:", typeof orderData, orderData);
             // Check if order already exists (deduplication)
-            const exists = liveOrders.value.some((o) => o._id === orderData._id);
+            const exists = liveOrders.value.some(
+              (o) => o._id === orderData._id
+            );
             if (!exists) {
               // Add new order to the top of the list
               liveOrders.value = [orderData, ...liveOrders.value];
@@ -136,33 +145,39 @@ const connectWebSocket = () => {
           break;
 
         case "order_updated":
+          toast.add({ title: "Order has just been updated" });
           try {
             console.log("Aktualizacja zamówienia", message.data);
             const updateData = message.data;
+            console.log("type:", typeof updateData);
             console.log("update data", updateData);
-      
+
             // Find and update the specific order
             const orderIndex = liveOrders.value.findIndex(
               (o) => o._id === updateData._id
             );
-      
+
             if (orderIndex !== -1) {
               // Update the order with new data (merge updates)
+              const updates = updateData.updates || updateData;
+              const { file_url, ...updateDataNoUrl } = updates;
+              
               liveOrders.value[orderIndex] = {
                 ...liveOrders.value[orderIndex],
-                ...(updateData.updates || updateData),
+                ...updateDataNoUrl,
               };
-              
+
               // Update specific cart items if needed
               if (updateData.cart_item_id) {
                 liveOrders.value[orderIndex].items?.forEach((item) => {
                   if (item.cart_item_id === updateData.cart_item_id) {
-                    if (updateData.updates?.file_url) item.file_url = updateData.updates.file_url;
-                    if (updateData.updates?.upload_status) item.upload_status = updateData.updates.upload_status;
+                    if (updateData.updates?.file_url)
+                      item.file_url = updateData.updates.file_url;
+                    if (updateData.updates?.upload_status)
+                      item.upload_status = updateData.updates.upload_status;
                   }
                 });
               }
-              
               console.log("✅ Zaktualizowano zamówienie:", updateData._id);
             }
           } catch (error) {
@@ -170,24 +185,63 @@ const connectWebSocket = () => {
           }
           break;
 
-        case "payment_succeeded":
+        // Payment status updates
+        case "succeeded":
+          toast.add({ title: "A payment has succeeded" });
           try {
             console.log("MAMY UPDATE PAYMENTU, SUKCES!", message.data);
             const { _id: orderId, updates } = message.data;
-            const orderIndex = liveOrders.value.findIndex(o => o._id === orderId);
-            
+            const orderIndex = liveOrders.value.findIndex(
+              (o) => o._id === orderId
+            );
+
             if (orderIndex !== -1) {
               liveOrders.value[orderIndex] = {
                 ...liveOrders.value[orderIndex],
-                payment_status: 'succeeded',
-                status: 'confirmed',
-                ...updates
+                payment_status: "succeeded",
+                ...updates,
               };
-              console.log("✅ Zaktualizowano status płatności dla zamówienia:", orderId);
+              console.log(
+                "Zaktualizowano status płatności (sukces) dla zamówienia:",
+                orderId
+              );
             }
           } catch (error) {
-            console.error("Error processing payment_succeeded:", error, message);
+            console.error(
+              "Error processing payment_succeeded:",
+              error,
+              message
+            );
           }
+          break;
+
+        case "failed":
+          toast.add({ title: "A payment has been declined" });
+          try {
+            console.log("NIE MA UPDATE PAYMENTU, PORAŻKA", message.data);
+            const { _id: orderId, updates } = message.data;
+            const orderIndex = liveOrders.value.findIndex(
+              (o) => o._id === orderId
+            );
+
+            if (orderIndex !== -1) {
+              liveOrders.value[orderIndex] = {
+                ...liveOrders.value[orderIndex],
+                payment_status: "failed",
+                ...updates,
+              };
+              console.log(
+                "Zaktualizowano status płatności (porażka) dla zamówienia:",
+                orderId
+              );
+            }
+          } catch (error) {
+            console.error("Error processing payment_failed:", error, message);
+          }
+          break;
+
+        case "canceled":
+          toast.add({ title: "A payment has just been cancelled" });
           break;
 
         default:
