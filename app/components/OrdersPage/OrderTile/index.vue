@@ -100,6 +100,10 @@ const handleArchive = () => {
               <p class="text-sm text-gray-600 font-mono">
                 Identyfikator zamówienia: {{ order._id }}
               </p>
+              <p>
+                {{ order.delivery_method }}
+              </p>
+              <p v-if="order.delivery_address">{{ order.delivery_address }}</p>
               <h3 class="text-lg font-semibold text-gray-900 uppercase">
                 {{ order.customer_info.name }} {{ order.customer_info.surname }}
               </h3>
@@ -150,6 +154,11 @@ const handleArchive = () => {
           <div class="">
             <OrdersPageOrderTilePrice :order="order" /> 
 
+            <div class="" v-for="(item,index) in order.items ">
+              {{ item.prod_type_id || 'brak'}}
+            </div>
+
+            
             <div class="flex flex-col gap-[2px]">
               <span
                 class="hover:ring px-2 py-1 text-xs font-semibold bg-red-200 text-black rounded text-center flex items-center justify-center gap-2"
@@ -297,7 +306,7 @@ const handleArchive = () => {
               <div v-if="item.product_name">
                 <h1>{{ index + 1 }}. {{ item.product_name }}</h1>
               </div>
-
+              
               <div class="flex items-center gap-1">
                 <span class="text-gray-500">Nakład:</span>
                 <span class="font-semibold text-gray-900">{{
@@ -314,6 +323,9 @@ const handleArchive = () => {
                 Specyfikacja
               </p>
               <!-- Spec values -->
+
+              <p>{{ !item.price ? 'Ten produkt nie został opłacony. Klient poprosił o kontakt' : '' }} </p>
+
 
               <div v-for="(value, key) in item.values">
                 {{ key }} : {{ value }}

@@ -1,8 +1,6 @@
 <template>
   <div>
-    {{ props.order.payment_status }}
-
-    <UPopover mode="">
+    <UPopover>
       <div class="w-full flex flex-col justify-end my-4">
         <!-- Main price container -->
         <div
@@ -180,5 +178,4 @@ const paymentStatusIcon = computed(() => {
       return "";
   }
 });
-
 </script>

@@ -11,6 +11,7 @@ export interface OrderItem {
   values: { [key: string]: string | number | boolean };
   file_url: string;
   upload_status?: string;
+  prod_type_id?: string | null
 }
 
 export interface CustomerInfo {
@@ -45,7 +46,6 @@ export interface OrderData {
   delivery_method: "delivery" | "pickup";
   total: number;
   submitted_at: string;
-  is_student: boolean;
   payment_intent_id: string;
   payment_status:
     | "pending"
